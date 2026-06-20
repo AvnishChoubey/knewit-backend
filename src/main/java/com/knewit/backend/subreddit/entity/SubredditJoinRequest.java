@@ -1,6 +1,6 @@
 package com.knewit.backend.subreddit.entity;
 
-import com.knewit.backend.user.entity.User;
+import com.knewit.backend.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 

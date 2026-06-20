@@ -1,6 +1,7 @@
 package com.knewit.backend.subreddit.entity;
 
-import com.knewit.backend.user.entity.User;
+import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.subreddit.enums.Visibility;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -37,7 +38,7 @@ public class Subreddit {
 
     @Column(nullable = false, length = 50)
     @Builder.Default
-    private String visibility = "PUBLIC"; // PUBLIC, PRIVATE
+    private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
 
     @Column(name = "posting_policy", nullable = false, length = 50)
     @Builder.Default
