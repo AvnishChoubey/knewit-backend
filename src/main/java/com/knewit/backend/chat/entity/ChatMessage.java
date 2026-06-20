@@ -1,7 +1,7 @@
 package com.knewit.backend.chat.entity;
 
+import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.chat.enums.MessageType;
-import com.knewit.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

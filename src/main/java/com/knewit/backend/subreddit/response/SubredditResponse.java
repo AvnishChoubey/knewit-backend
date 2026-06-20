@@ -1,7 +1,5 @@
 package com.knewit.backend.subreddit.response;
 
-import com.knewit.backend.subreddit.enums.Topic;
-import com.knewit.backend.subreddit.enums.Visibility;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

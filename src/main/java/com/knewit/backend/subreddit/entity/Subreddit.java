@@ -1,94 +1,76 @@
-
 package com.knewit.backend.subreddit.entity;
 
-import com.knewit.backend.subreddit.enums.Topic;
+import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.subreddit.enums.PostingPolicy;
 import com.knewit.backend.subreddit.enums.Visibility;
-import com.knewit.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 
 @Entity
 @Table(name = "subreddits")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Subreddit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String name;
+    @Column(nullable = false, unique = true, length = 80)
+    private String name; // The slug name used in URL (e.g. "programming")
 
-    @Column(length = 500)
+    @Column(nullable = false, length = 120)
+    private String title; // Human-readable title (e.g. "Programming Community")
+
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "banner_url")
-    private String bannerUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creator_user_id", nullable = false)
+    private User creator;
 
-    @Column(name = "icon_url")
+    @Column(nullable = false)
+    @Builder.Default
+    private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
+
+    @Column(name = "posting_policy", nullable = false)
+    @Builder.Default
+    private PostingPolicy postingPolicy = PostingPolicy.OPEN; // OPEN, RESTRICTED
+
+    @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "icon_public_id")
+    private String iconPublicId;
+
+    @Column(name = "member_count", nullable = false)
     @Builder.Default
-    private Visibility visibility = Visibility.PUBLIC;
+    private Long memberCount = 0L;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
-
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Topic topic;
-    @OneToMany(
-            mappedBy = "subreddit",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-
+    @Column(name = "post_count", nullable = false)
     @Builder.Default
-    private List<SubredditMember> members = new ArrayList<>();
+    private Long postCount = 0L;
 
-    @OneToMany(
-            mappedBy = "subreddit",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    private List<SubredditModerator> moderators;
+    @Column(name = "is_archived", nullable = false)
+    @Builder.Default
+    private Boolean isArchived = false;
 
 
-//    @OneToMany(
-//            mappedBy = "subreddit",
-//            cascade = CascadeType.ALL
-//    )
-//
-//    @Builder.Default
-//   private List<Post> posts = new ArrayList<>();
+    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    private Instant createdAt;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "updated_at", nullable = false)
+    @UpdateTimestamp
+    private Instant updatedAt;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 }

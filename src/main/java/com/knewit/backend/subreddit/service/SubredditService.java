@@ -1,10 +1,6 @@
 
 package com.knewit.backend.subreddit.service;
 
-import com.knewit.backend.subreddit.entity.Subreddit;
-import com.knewit.backend.subreddit.entity.SubredditMember;
-import com.knewit.backend.subreddit.entity.SubredditModerator;
-import com.knewit.backend.user.entity.User;
 import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditModeratorRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;

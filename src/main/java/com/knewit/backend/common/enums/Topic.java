@@ -1,5 +1,4 @@
-
-package com.knewit.backend.subreddit.enums;
+package com.knewit.backend.common.enums;
 
 public enum Topic {
     TECHNOLOGY,

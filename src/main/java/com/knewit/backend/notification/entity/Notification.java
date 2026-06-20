@@ -1,7 +1,7 @@
 package com.knewit.backend.notification.entity;
 
+import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.notification.enums.NotificationType;
-import com.knewit.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

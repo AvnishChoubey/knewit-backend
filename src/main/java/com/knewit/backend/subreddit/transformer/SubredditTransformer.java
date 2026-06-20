@@ -1,7 +1,6 @@
 
 package com.knewit.backend.subreddit.transformer;
 
-import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.response.SubredditResponse;
 
 public class SubredditTransformer {
