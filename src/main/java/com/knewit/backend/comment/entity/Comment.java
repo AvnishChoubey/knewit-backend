@@ -42,9 +42,9 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "content_status", nullable = false, length = 50)
+    @Column(name = "content_status", nullable = false)
     @Builder.Default
-    private CommentStatus contentStatus = CommentStatus.PUBLISHED; // DRAFT, PUBLISHED, REMOVED, ARCHIVED
+    private CommentStatus commentStatus = CommentStatus.PUBLISHED; // DRAFT, PUBLISHED, REMOVED, ARCHIVED
 
     @Column(name = "upvote_count", nullable = false)
     @Builder.Default

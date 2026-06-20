@@ -33,7 +33,7 @@ public class Subreddit {
     @JoinColumn(name = "creator_user_id", nullable = false)
     private User creator;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private Visibility visibility = Visibility.PRIVATE; // PUBLIC, PRIVATE

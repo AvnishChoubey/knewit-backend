@@ -1,11 +1,14 @@
 package com.knewit.backend.subreddit.entity;
 
-import com.knewit.backend.user.entity.User;
+import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.subreddit.enums.MemberStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "subreddit_members")
@@ -14,58 +17,52 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@IdClass(SubredditMember.SubredditMemberId.class)
 public class SubredditMember {
-
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subreddit_id", nullable = false)
     private Subreddit subreddit;
-
-    @Id
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "member_state", nullable = false, length = 50)
+    @Column(name = "member_state", nullable = false)
     @Builder.Default
-    private String memberState = "APPROVED"; // PENDING, APPROVED, BANNED
+    private MemberStatus memberStatus = MemberStatus.APPROVED; // PENDING, APPROVED, BANNED
 
     @Column(name = "is_moderator", nullable = false)
     @Builder.Default
-    private Boolean isModerator = false;
+    private boolean isModerator = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by_user_id")
     private User approvedBy;
 
     @Column(name = "approved_at")
-    private Instant approvedAt;
+    private LocalDateTime approvedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "banned_by_user_id")
     private User bannedBy;
 
     @Column(name = "banned_at")
-    private Instant bannedAt;
+    private LocalDateTime bannedAt;
 
     @Column(name = "ban_reason", columnDefinition = "TEXT")
     private String banReason;
 
     @Column(name = "joined_at")
-    private Instant joinedAt;
+    private LocalDateTime joinedAt;
 
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SubredditMemberId implements Serializable {
-        private Subreddit subreddit;
-        private User user;
-    }
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }
