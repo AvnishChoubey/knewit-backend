@@ -2,7 +2,6 @@
 package com.knewit.backend.user.entity;
 
 import com.knewit.backend.subreddit.entity.SubredditMember;
-import com.knewit.backend.subreddit.entity.SubredditModerator;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
