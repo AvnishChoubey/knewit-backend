@@ -1,7 +1,7 @@
 
-package com.knewit.backend.subreddit.repository;
+package com.knewit.backend.user.repository;
 
-import com.knewit.backend.subreddit.entity.User;
+import com.knewit.backend.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

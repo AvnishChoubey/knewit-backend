@@ -1,6 +1,7 @@
 
 package com.knewit.backend.subreddit.entity;
 
+import com.knewit.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

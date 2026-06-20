@@ -3,6 +3,7 @@ package com.knewit.backend.subreddit.entity;
 
 import com.knewit.backend.subreddit.enums.Topic;
 import com.knewit.backend.subreddit.enums.Visibility;
+import com.knewit.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
