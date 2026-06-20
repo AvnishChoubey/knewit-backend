@@ -1,6 +1,7 @@
 package com.knewit.backend.comment.entity;
 
 import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.comment.enums.CommentStatus;
 import com.knewit.backend.post.entity.Post;
 import jakarta.persistence.*;
 import lombok.*;
@@ -41,9 +42,9 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "content_status", nullable = false, length = 50)
+    @Column(name = "content_status", nullable = false)
     @Builder.Default
-    private String contentStatus = "PUBLISHED"; // DRAFT, PUBLISHED, REMOVED, ARCHIVED
+    private CommentStatus commentStatus = CommentStatus.PUBLISHED; // DRAFT, PUBLISHED, REMOVED, ARCHIVED
 
     @Column(name = "upvote_count", nullable = false)
     @Builder.Default

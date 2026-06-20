@@ -1,8 +1,10 @@
 package com.knewit.backend.post.entity;
 
+import com.knewit.backend.post.enums.PostStatus;
 import com.knewit.backend.post.enums.PostType;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.subreddit.entity.Subreddit;
+import com.knewit.backend.subreddit.enums.Visibility;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -44,13 +46,13 @@ public class Post {
     @Column(name = "external_url", columnDefinition = "TEXT")
     private String externalUrl;
 
-    @Column(name = "content_status", nullable = false, length = 50)
+    @Column(name = "post_status", nullable = false)
     @Builder.Default
-    private String contentStatus = "PUBLISHED"; // DRAFT, PENDING_APPROVAL, PUBLISHED, REMOVED, ARCHIVED
+    private PostStatus contentStatus = PostStatus.PUBLISHED;// DRAFT, PENDING_APPROVAL, PUBLISHED, REMOVED, ARCHIVED
 
     @Column(nullable = false, length = 50)
     @Builder.Default
-    private String visibility = "PUBLIC"; // PUBLIC, PRIVATE
+    private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
 
     @Column(name = "upvote_count", nullable = false)
     @Builder.Default

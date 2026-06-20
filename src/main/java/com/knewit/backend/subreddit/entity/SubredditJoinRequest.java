@@ -1,11 +1,13 @@
 package com.knewit.backend.subreddit.entity;
 
 import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.subreddit.enums.SubredditJoinRequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "subreddit_join_requests")
@@ -17,7 +19,8 @@ import java.util.UUID;
 public class SubredditJoinRequest {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subreddit_id", nullable = false)
@@ -27,23 +30,25 @@ public class SubredditJoinRequest {
     @JoinColumn(name = "requester_user_id", nullable = false)
     private User requester;
 
-    @Column(nullable = false, length = 50)
-    private String status; // PENDING, APPROVED, REJECTED
+    @Column(nullable = false)
+    private SubredditJoinRequestStatus status; // PENDING, APPROVED, BANNED
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by_user_id")
     private User reviewedBy;
 
     @Column(name = "reviewed_at")
-    private Instant reviewedAt;
+    private LocalDateTime reviewedAt;
 
     @Column(columnDefinition = "TEXT")
     private String reason;
 
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }
 

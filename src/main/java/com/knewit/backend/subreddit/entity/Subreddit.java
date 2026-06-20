@@ -1,6 +1,7 @@
 package com.knewit.backend.subreddit.entity;
 
 import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.subreddit.enums.PostingPolicy;
 import com.knewit.backend.subreddit.enums.Visibility;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,7 +43,7 @@ public class Subreddit {
 
     @Column(name = "posting_policy", nullable = false, length = 50)
     @Builder.Default
-    private String postingPolicy = "OPEN"; // OPEN, RESTRICTED
+    private PostingPolicy postingPolicy = PostingPolicy.OPEN; // OPEN, RESTRICTED
 
     @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;

@@ -1,6 +1,7 @@
 package com.knewit.backend.user.entity;
 
 import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.user.enums.ReportStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -33,9 +34,9 @@ public class UserReport {
     @Column(columnDefinition = "TEXT")
     private String details;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
     @Builder.Default
-    private String status = "PENDING"; // PENDING, RESOLVED, DISMISSED
+    private ReportStatus status = ReportStatus.PENDING; // PENDING, RESOLVED, DISMISSED
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resolved_by_user_id")
