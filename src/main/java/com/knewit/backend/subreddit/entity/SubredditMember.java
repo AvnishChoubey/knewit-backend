@@ -10,9 +10,16 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "subreddit_members")
 @Getter
 @Setter
+@Table(
+        name = "subreddit_members",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {"user_id", "subreddit_id"}
+                )
+        }
+)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,12 +28,12 @@ public class SubredditMember {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subreddit_id", nullable = false)
     private Subreddit subreddit;
 
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -69,5 +76,5 @@ public class SubredditMember {
     private LocalDateTime updatedAt;
 
 
-    
+
 }

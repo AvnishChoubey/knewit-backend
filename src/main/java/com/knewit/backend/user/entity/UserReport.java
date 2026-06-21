@@ -34,9 +34,9 @@ public class UserReport {
     @Column(columnDefinition = "TEXT")
     private String details;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    @Enumerated(EnumType.STRING)
     private ReportStatus status = ReportStatus.PENDING; // PENDING, RESOLVED, DISMISSED
 
     @ManyToOne(fetch = FetchType.LAZY)

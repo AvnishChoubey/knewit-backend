@@ -1,43 +1,47 @@
-package com.knewit.backend.auth.entity;
+package com.knewit.backend.chat.entity;
 
-import com.knewit.backend.auth.enums.AuthProvider;
+import com.knewit.backend.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-
 import java.time.LocalDateTime;
 
-
 @Entity
-@Table(name = "oauth_accounts", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"provider", "provider_user_id"})
-})
+@Table(name = "chat_participants")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OAuthAccount {
-
+public class ChatParticipant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    private ChatConversation conversation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private AuthProvider provider; // GOOGLE, FACEBOOK
+    @Column(name = "left_at")
+    private LocalDateTime leftAt;
 
-    @Column(name = "provider_user_id", nullable = false, length = 191)
-    private String providerUserId;
+    @OneToOne
+    @JoinColumn(name = "last_read_message_id")
+    private ChatMessage lastReadMessageId;
 
-    @Column(name = "provider_email", length = 320)
-    private String providerEmail;
+    @Column(name = "unread_count", nullable = false)
+    @Builder.Default
+    private Integer unreadCount = 0;
+
+    @Column(name = "is_muted", nullable = false)
+    @Builder.Default
+    private Boolean isMuted = false;
 
     @Column(name = "created_at", nullable = false)
     @CreationTimestamp

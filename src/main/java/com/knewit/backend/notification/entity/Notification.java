@@ -1,7 +1,7 @@
 package com.knewit.backend.notification.entity;
 
-import com.knewit.backend.notification.enums.NotificationType;
 import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.notification.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,7 +25,8 @@ public class Notification {
     @JoinColumn(name = "recipient_user_id", nullable = false)
     private User recipient;
 
-    @Column(nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private NotificationType type; // COMMENT_REPLY, MODERATION, FOLLOW, CHAT, SYSTEM
 
     @Column(nullable = false, length = 200)

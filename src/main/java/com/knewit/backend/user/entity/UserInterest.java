@@ -24,8 +24,8 @@ public class UserInterest {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Topic interest;
 
     @Column(name = "created_at", nullable = false)
