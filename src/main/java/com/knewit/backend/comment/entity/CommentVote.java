@@ -10,12 +10,23 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "comment_votes")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(
+        name = "comment_votes",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_comment_vote_comment_user",
+                        columnNames = {
+                                "comment_id",
+                                "user_id"
+                        }
+                )
+        }
+)
 public class CommentVote {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
