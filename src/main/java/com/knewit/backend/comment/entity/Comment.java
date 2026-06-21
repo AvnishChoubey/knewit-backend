@@ -43,7 +43,7 @@ public class Comment {
     private String body;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "content_status", nullable = false)
+    @Column(name = "comment_status", nullable = false)
     @Builder.Default
     private CommentStatus commentStatus = CommentStatus.PUBLISHED; // DRAFT, PUBLISHED, REMOVED, ARCHIVED
 

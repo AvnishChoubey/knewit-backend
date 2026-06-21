@@ -7,37 +7,45 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "subreddit_members")
 @Getter
 @Setter
+@Table(
+        name = "subreddit_members",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {"user_id", "subreddit_id"}
+                )
+        }
+)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SubredditMember {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
+    private Long Id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subreddit_id", nullable = false)
     private Subreddit subreddit;
-    
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "member_state", nullable = false)
     @Builder.Default
-    private MemberStatus memberStatus = MemberStatus.APPROVED; // PENDING, APPROVED, BANNED
+    @Column(name = "member_state", nullable = false)
+    private MemberStatus memberStatus = MemberStatus.PENDING;// PENDING, APPROVED, BANNED
 
     @Column(name = "is_moderator", nullable = false)
     @Builder.Default
-    private boolean isModerator = false;
+    private Boolean isModerator = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by_user_id")
@@ -66,4 +74,7 @@ public class SubredditMember {
     @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+
+
 }

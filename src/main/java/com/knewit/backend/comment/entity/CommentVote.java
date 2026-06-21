@@ -1,7 +1,7 @@
 package com.knewit.backend.comment.entity;
 
-import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.common.enums.VoteType;
+import com.knewit.backend.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,8 +29,8 @@ public class CommentVote {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private VoteType voteType; // UPVOTE, DOWNVOTE
 
     @Column(name = "created_at", nullable = false)
