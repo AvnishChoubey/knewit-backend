@@ -100,7 +100,7 @@ public class ChatService {
                 .messageType(MessageType.TEXT)
                 .sentAt(now)
                 .build();
-        messageRepository.save(message);
+        messageRepository.save(message);git
 
         conversation.setLastMessageAt(now);
         conversationRepository.save(conversation);
