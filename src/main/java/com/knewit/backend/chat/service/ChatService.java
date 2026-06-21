@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +29,7 @@ public class ChatService {
     private final ChatParticipantRepository participantRepository;
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional(readOnly = true)
     public List<ChatMessageDto> getMessages(Long userId, Long conversationId) {
@@ -102,15 +105,39 @@ public class ChatService {
         conversation.setLastMessageAt(now);
         conversationRepository.save(conversation);
 
-        return ChatMessageDto.builder()
+        conversation.setLastMessageAt(now);
+        conversationRepository.save(conversation);
+
+        ChatMessageDto dto = ChatMessageDto.builder()
                 .id(message.getId())
                 .conversationId(conversation.getId())
                 .senderUsername(sender.getUsername())
                 .body(message.getBody())
                 .messageType(message.getMessageType())
-                .attachmentUrl(null)
+                .attachmentUrl(message.getAttachmentUrl())
                 .sentAt(message.getSentAt().toString())
                 .build();
 
+        /*
+         * Broadcast to all users subscribed to this chat
+         */
+        messagingTemplate.convertAndSend("/topic/chat/" + conversationId, dto);
+        return dto;
+    }
+
+    // getUserConversations()
+    @Transactional(readOnly = true)
+    public List<ConversationDto> getUserConversations(Long userId) {
+
+        return participantRepository.findAllByUserId(userId).stream()
+                .map(participant -> {ChatConversation conversation = participant.getConversation();
+                    return ConversationDto.builder()
+                            .conversationId(conversation.getId())
+                            .title(conversation.getTitle())
+                            .unreadCount(participant.getUnreadCount())
+                            .lastMessageAt(conversation.getLastMessageAt())
+                            .build();
+                })
+                .toList();
     }
 }

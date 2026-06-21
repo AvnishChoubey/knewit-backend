@@ -38,6 +38,14 @@ public class ChatController {
         return ResponseEntity.ok(chatService.sendMessage(userId, chatId, body));
     }
 
+    @GetMapping
+    public ResponseEntity<List<ConversationDto>> getConversations(
+            @RequestHeader("Authorization")
+            String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(chatService.getUserConversations(userId));
+    }
+
 //    private Long getUserIdFromToken(String authHeader) {
 //        String token = authHeader.replace("Bearer ", "");
 //        Key key = Keys.hmacShaKeyFor(jwtConfig.getSigningSecret().getBytes(StandardCharsets.UTF_8));

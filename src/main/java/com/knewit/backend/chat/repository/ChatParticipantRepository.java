@@ -11,4 +11,5 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     List<ChatParticipant> findAllByUserId(Long userId);
     List<ChatParticipant> findAllByConversationId(Long conversationId);
     Optional<ChatParticipant> findByConversationIdAndUserId(Long conversationId, Long userId);
+    List<ChatParticipant> findAllByUserId(Long userId);
 }
