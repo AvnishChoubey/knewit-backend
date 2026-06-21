@@ -45,7 +45,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getPublicUser(viewerId, username));
     }
 
-    @PostMapping("/users/{username}/follow")
+    @PostMapping("/user/{username}/follow")
     public ResponseEntity<FollowUserResponse> follow(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String username) {
@@ -53,7 +53,7 @@ public class UserController {
         return ResponseEntity.ok(userService.follow(userId, username));
     }
 
-    @DeleteMapping("/users/{username}/follow")
+    @DeleteMapping("/user/{username}/follow")
     public ResponseEntity<Void> unfollow(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String username) {
@@ -62,7 +62,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/users/{username}/block")
+    @PostMapping("/user/{username}/block")
     public ResponseEntity<BlockUserResponse> block(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String username) {
@@ -70,7 +70,7 @@ public class UserController {
         return ResponseEntity.ok(userService.block(userId, username));
     }
 
-    @DeleteMapping("/users/{username}/block")
+    @DeleteMapping("/user/{username}/block")
     public ResponseEntity<Void> unblock(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String username) {
@@ -79,7 +79,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/users/{username}/report")
+    @PostMapping("/user/{username}/report")
     public ResponseEntity<ReportUserResponse> report(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String username,
