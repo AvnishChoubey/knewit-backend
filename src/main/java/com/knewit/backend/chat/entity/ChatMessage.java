@@ -3,8 +3,7 @@ package com.knewit.backend.chat.entity;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.chat.enums.MessageType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,6 +13,9 @@ import java.time.LocalDateTime;
 @Table(name = "chat_messages")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ChatMessage {
 
     @Id
@@ -31,7 +33,8 @@ public class ChatMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "message_type", nullable = false, length = 50)
+    @Column(name = "message_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private MessageType messageType; // TEXT, SYSTEM, MEDIA
 
     @Column(name = "attachment_url", columnDefinition = "TEXT")

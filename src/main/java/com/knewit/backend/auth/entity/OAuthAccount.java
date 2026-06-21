@@ -1,5 +1,6 @@
 package com.knewit.backend.auth.entity;
 
+import com.knewit.backend.auth.enums.AuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,7 +30,7 @@ public class OAuthAccount {
     private User user;
 
     @Column(nullable = false, length = 50)
-    private String provider; // GOOGLE, FACEBOOK
+    private AuthProvider provider ; // GOOGLE, FACEBOOK
 
     @Column(name = "provider_user_id", nullable = false, length = 191)
     private String providerUserId;

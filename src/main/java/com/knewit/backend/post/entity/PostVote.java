@@ -29,7 +29,8 @@ public class PostVote {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private VoteType voteType; // UPVOTE, DOWNVOTE
 
     @Column(name = "created_at", nullable = false)

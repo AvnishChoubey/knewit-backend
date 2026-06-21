@@ -32,6 +32,7 @@ public class User {
     private String password;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private UserStatus status;
 
     @Column(name = "email_verified_at")
@@ -41,17 +42,13 @@ public class User {
     private LocalDateTime profileCompletedAt;
 
     @Column(columnDefinition = "TEXT")
-    private LocalDateTime bio;
+    private String bio;
 
     @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;
 
     @Column(name = "avatar_public_id")
     private String avatarPublicId;
-
-//    @Column(name = "avatar_version", nullable = false)
-//    @Builder.Default
-//    private Long avatarVersion = 0L;
 
     @Column(name = "is_private_profile", nullable = false)
     @Builder.Default

@@ -34,7 +34,8 @@ public class UserReport {
     @Column(columnDefinition = "TEXT")
     private String details;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private ReportStatus status = ReportStatus.PENDING; // PENDING, RESOLVED, DISMISSED
 

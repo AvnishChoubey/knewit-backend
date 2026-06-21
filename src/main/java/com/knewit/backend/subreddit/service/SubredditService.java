@@ -4,7 +4,6 @@ package com.knewit.backend.subreddit.service;
 import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditModeratorRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;
-import com.knewit.backend.user.repository.UserRepository;
 import com.knewit.backend.subreddit.request.CreateSubredditRequest;
 import com.knewit.backend.subreddit.response.SubredditResponse;
 import com.knewit.backend.subreddit.transformer.SubredditTransformer;

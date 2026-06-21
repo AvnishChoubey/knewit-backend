@@ -37,10 +37,12 @@ public class Subreddit {
     private User creator;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
 
     @Column(name = "posting_policy", nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private PostingPolicy postingPolicy = PostingPolicy.OPEN; // OPEN, RESTRICTED
 

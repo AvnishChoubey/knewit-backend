@@ -34,7 +34,8 @@ public class Post {
     @JoinColumn(name = "author_user_id", nullable = false)
     private User author;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private PostType type; // TEXT, IMAGE, VIDEO, URL
 
     @Column(nullable = false, length = 300)
@@ -47,10 +48,12 @@ public class Post {
     private String externalUrl;
 
     @Column(name = "content_status", nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private PostStatus postStatus = PostStatus.PUBLISHED; // DRAFT, PENDING_APPROVAL, PUBLISHED, REMOVED, ARCHIVED
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
 

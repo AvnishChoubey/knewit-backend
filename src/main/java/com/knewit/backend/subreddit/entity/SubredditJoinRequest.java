@@ -31,6 +31,7 @@ public class SubredditJoinRequest {
     private User requester;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private SubredditJoinRequestStatus status; // PENDING, APPROVED, REJECTED
 
     @ManyToOne(fetch = FetchType.LAZY)

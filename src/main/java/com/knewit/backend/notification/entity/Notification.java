@@ -25,7 +25,8 @@ public class Notification {
     @JoinColumn(name = "recipient_user_id", nullable = false)
     private User recipient;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private NotificationType type; // COMMENT_REPLY, MODERATION, FOLLOW, CHAT, SYSTEM
 
     @Column(nullable = false, length = 200)

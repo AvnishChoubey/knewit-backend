@@ -25,7 +25,8 @@ public class PostMedia {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    @Column(name = "media_type", nullable = false, length = 50)
+    @Column(name = "media_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private MediaType mediaType; // IMAGE, VIDEO, URL, TEXT
 
     @Column(name = "cloudinary_public_id", nullable = false, length = 255)
