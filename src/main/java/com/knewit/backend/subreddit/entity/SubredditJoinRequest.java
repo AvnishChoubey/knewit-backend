@@ -26,12 +26,14 @@ public class SubredditJoinRequest {
     @JoinColumn(name = "subreddit_id", nullable = false)
     private Subreddit subreddit;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_user_id", nullable = false)
     private User requester;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubredditJoinRequestStatus status; // PENDING, APPROVED, BANNED
+    private SubredditJoinRequestStatus status; //PENDING, APPROVED, BANNED
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by_user_id")

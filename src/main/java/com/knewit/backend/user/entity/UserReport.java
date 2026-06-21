@@ -36,6 +36,7 @@ public class UserReport {
 
     @Column(nullable = false)
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private ReportStatus status = ReportStatus.PENDING; // PENDING, RESOLVED, DISMISSED
 
     @ManyToOne(fetch = FetchType.LAZY)

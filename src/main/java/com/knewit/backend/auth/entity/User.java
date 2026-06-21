@@ -31,6 +31,8 @@ public class User {
     @Column(name = "password")
     private String password;
 
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
 
@@ -41,7 +43,7 @@ public class User {
     private LocalDateTime profileCompletedAt;
 
     @Column(columnDefinition = "TEXT")
-    private LocalDateTime bio;
+    private String bio;
 
     @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;

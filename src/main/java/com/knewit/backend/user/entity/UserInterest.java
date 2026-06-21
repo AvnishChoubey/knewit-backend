@@ -25,6 +25,7 @@ public class UserInterest {
     private User user;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Topic interest;
 
     @Column(name = "created_at", nullable = false)

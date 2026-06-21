@@ -31,9 +31,10 @@ public class SubredditMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "member_state", nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private MemberStatus memberStatus = MemberStatus.APPROVED; // PENDING, APPROVED, BANNED
+    @Column(name = "member_state", nullable = false)
+    private MemberStatus memberStatus = MemberStatus.PENDING;// PENDING, APPROVED, BANNED
 
     @Column(name = "is_moderator", nullable = false)
     @Builder.Default
@@ -66,5 +67,7 @@ public class SubredditMember {
     @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+
     
 }
