@@ -61,7 +61,6 @@ public class Subreddit {
     @Builder.Default
     private Boolean isArchived = false;
 
-
     @Column(name = "created_at", nullable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;

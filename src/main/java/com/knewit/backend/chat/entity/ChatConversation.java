@@ -20,7 +20,8 @@ public class ChatConversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "conversation_type", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "conversation_type", nullable = false)
     private ConversationType conversationType; // DIRECT, GROUP
 
     @Column(length = 120)

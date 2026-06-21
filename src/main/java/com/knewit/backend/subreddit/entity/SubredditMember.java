@@ -30,6 +30,7 @@ public class SubredditMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "member_state", nullable = false)
     @Builder.Default
     private MemberStatus memberStatus = MemberStatus.APPROVED; // PENDING, APPROVED, BANNED

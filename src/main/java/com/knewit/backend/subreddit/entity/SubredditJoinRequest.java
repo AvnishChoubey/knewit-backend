@@ -29,6 +29,7 @@ public class SubredditJoinRequest {
     @JoinColumn(name = "requester_user_id", nullable = false)
     private User requester;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SubredditJoinRequestStatus status; // PENDING, APPROVED, REJECTED
 

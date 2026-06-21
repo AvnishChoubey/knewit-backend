@@ -32,7 +32,6 @@ public class SearchResponseDto {
     @AllArgsConstructor
     public static class UserResultDto {
         private String username;
-        private String displayName;
         private String avatarUrl;
     }
 

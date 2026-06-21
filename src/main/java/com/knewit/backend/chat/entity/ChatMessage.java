@@ -1,7 +1,7 @@
 package com.knewit.backend.chat.entity;
 
 import com.knewit.backend.chat.enums.MessageType;
-import com.knewit.backend.user.entity.User;
+import com.knewit.backend.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +31,8 @@ public class ChatMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "message_type", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "message_type", nullable = false)
     private MessageType messageType; // TEXT, SYSTEM, MEDIA
 
     @Column(name = "attachment_url", columnDefinition = "TEXT")
