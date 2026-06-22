@@ -13,6 +13,7 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
     boolean existsByFollowerIdAndFollowedId(Long followerId, Long followedId);
     long countByFollowerId(Long followerId);
     long countByFollowedId(Long followedId);
-    List<UserFollow> findAllByFollower(User follower);
+    List<UserFollow> findAllByFollowerId(Long followerId);
     Optional<UserFollow> findByFollowerAndFollowed(User follower, User followed);
+    void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
 }

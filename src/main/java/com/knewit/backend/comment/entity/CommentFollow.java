@@ -1,43 +1,44 @@
-package com.knewit.backend.post.entity;
+package com.knewit.backend.comment.entity;
 
 import com.knewit.backend.auth.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "post_saves",
+@Table(name = "comment_follows",
         uniqueConstraints = {
                 @UniqueConstraint(
                         columnNames = {
-                                "post_id",
+                                "comment_id",
                                 "user_id"
                         }
                 )
         }
 )
-@Getter
-@Setter
 @Builder
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-public class PostSave {
-
+@NoArgsConstructor
+public class CommentFollow {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
-    private Post saved;
+    public Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User saver;
+    private User follower;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id", nullable = false)
+    private Comment followed;
+
+    @Column(name = "created_at", nullable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

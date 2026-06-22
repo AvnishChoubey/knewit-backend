@@ -48,7 +48,7 @@ public class CommentService {
 
         if (viewerId != null) {
 
-            saved = commentSaveRepository.existsByComment_IdAndUser_Id(comment.getId(), viewerId);
+            saved = commentSaveRepository.existsBySaverIdAndSavedId(viewerId, comment.getId());
 
             CommentVote vote = commentVoteRepository.findByComment_IdAndUser_Id(comment.getId(), viewerId).orElse(null);
 
@@ -237,13 +237,7 @@ public class CommentService {
                                         "User not found"
                                 ));
 
-        CommentSave existingSave =
-                commentSaveRepository
-                        .findByComment_IdAndUser_Id(
-                                commentId,
-                                userId
-                        )
-                        .orElse(null);
+        CommentSave existingSave = commentSaveRepository.findBySaverIdAndSavedId(userId, commentId).orElse(null);
 
         if (existingSave != null) {
 
@@ -253,10 +247,9 @@ public class CommentService {
             return;
         }
 
-        CommentSave save =
-                CommentSave.builder()
-                        .comment(comment)
-                        .user(user)
+        CommentSave save = CommentSave.builder()
+                        .saved(comment)
+                        .saver(user)
                         .build();
 
         commentSaveRepository.save(save);

@@ -1,28 +1,26 @@
 package com.knewit.backend.post.repository;
 
+import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.post.entity.Post;
 import com.knewit.backend.post.entity.PostSave;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface PostSaveRepository
-        extends JpaRepository<PostSave, Long> {
+@Repository
+public interface PostSaveRepository extends JpaRepository<PostSave, Long> {
 
-    Optional<PostSave> findByPost_IdAndUser_Id(
-            Long postId,
-            Long userId
-    );
+    Optional<PostSave> findBySaverIdAndSavedId(Long userId, Long postId);
 
-    boolean existsByPost_IdAndUser_Id(
-            Long postId,
-            Long userId
-    );
+    boolean existsBySaverIdAndSavedId(Long userId, Long postId);
 
-    void deleteByPost_IdAndUser_Id(
-            Long postId,
-            Long userId
-    );
+    void deleteBySaverIdAndSavedId(Long userId, Long postId);
 
-    List<PostSave> findByUser_Id(Long userId);
+    List<PostSave> findBySaverId(Long userId);
+
+    List<PostSave> findAllBySaver(User user);
+
+    Optional<PostSave> findBySaverAndSaved(User saver, Post saved);
 }
