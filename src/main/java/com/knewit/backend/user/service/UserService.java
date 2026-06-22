@@ -1,31 +1,39 @@
 package com.knewit.backend.user.service;
 
-//import com.knewit.backend.auth.dto.AuthenticatedUserDto;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.auth.repository.UserRepository;
+import com.knewit.backend.comment.entity.Comment;
 import com.knewit.backend.common.enums.Topic;
 import com.knewit.backend.common.exception.KnewitException;
+import com.knewit.backend.post.entity.Post;
+import com.knewit.backend.post.entity.PostSave;
 import com.knewit.backend.user.dto.*;
 import com.knewit.backend.user.entity.*;
-import com.knewit.backend.user.enums.ReportStatus;
 import com.knewit.backend.user.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService {
 
     @Autowired private UserRepository userRepository;
+    @Autowired private PostRepository postRepository;
+    @Autowired private CommentRepository commentRepository;
     @Autowired private UserInterestRepository userInterestRepository;
     @Autowired private UserFollowRepository userFollowRepository;
+    @Autowired private PostFollowRepository postFollowRepository;
+    @Autowired private CommentFollowRepository commentFollowRepository;
+    @Autowired private PostSaveRepository postSaveRepository;
+    @Autowired private CommentSaveRepository commentSaveRepository;
     @Autowired private UserBlockRepository userBlockRepository;
-    @Autowired private UserReportRepository userReportRepository;
 
 //    @Transactional(readOnly = true)
 //    public AuthenticatedUserDto getMe(Long userId) {
@@ -82,103 +90,370 @@ public class UserService {
 
         return new GetPublicUserResponse(profileDto, isFollowing, isBlocked, isBlockedByViewer);
     }
+    
+    /* SAVE FEATURE METHODS */
+
+    public Map<?, ?> getAllSaves(Long saverId) {
+        User saver = userRepository.findById(saverId)
+                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Follower user not found", HttpStatus.NOT_FOUND));
+        
+        List<PostSave> postsaves = postSaveRepository.findAllBySaver(saver);
+        List<CommentSave> commentsaves = commentSaveRepository.findAllBySaver(saver);
+
+        Map<String, List<?>> response = new HashMap<>();
+
+        response.put("savedPosts", postsaves);
+        response.put("savedComments", commentsaves);
+
+        return response;
+    }
 
     @Transactional
-    public FollowUserResponse follow(Long followerId, String followedUsername) {
+    public String save(Long userId, String entity, Long entityId) {
+        User saver = userRepository.findById(userId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Saver user not found", HttpStatus.NOT_FOUND));
+
+        if(entity.equalsIgnoreCase("POST")) {
+            Post saved = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Saved post not found", HttpStatus.NOT_FOUND));
+
+            Optional<UserBlock> optionalUserBlock1 = userBlockRepository.findByBlockerAndBlocked(saver, saved.getAuthor());
+
+            if(optionalUserBlock1.isPresent()) {
+                throw new KnewitException("CANNOT_SAVE", "Saved owner has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserBlock> optionalUserBlock2 = userBlockRepository.findByBlockerAndBlocked(saved.getAuthor(), saver);
+
+            if(optionalUserBlock2.isPresent()) {
+                throw new KnewitException("CANNOT_SAVE", "Saved owner has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<PostSave> optionalPostSave = postSaveRepository.findBySaverAndSaved(saver, saved);
+            if(optionalPostSave.isPresent()) {
+                throw new KnewitException("ALREADY_SAVED", "You have already saved", HttpStatus.BAD_REQUEST);
+            } else {
+                PostSave postSave = PostSave.builder()
+                        .saver(saver)
+                        .saved(saved)
+                        .build();
+
+                postSaveRepository.save(postSave);
+            }
+        }
+        else if(entity.equalsIgnoreCase("COMMENT")) {
+            Comment saved = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Saved comment not found", HttpStatus.NOT_FOUND));
+
+            User savedCommentOwner = userRepository.findById(saved.getAuthor().getId()).get();
+
+            Optional<UserBlock> optionalUserBlock1 = userBlockRepository.findByBlockerAndBlocked(saver, savedCommentOwner);
+
+            if(optionalUserBlock1.isPresent()) {
+                throw new KnewitException("CANNOT_SAVE", "Comment owner has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserBlock> optionalUserBlock2 = userBlockRepository.findByBlockerAndBlocked(savedCommentOwner, saver);
+
+            if(optionalUserBlock2.isPresent()) {
+                throw new KnewitException("CANNOT_SAVE", "Comment owner has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            User saveedCommentPostOwner = userRepository.findById(postRepository.findById(saved.getPost().getId()).getAuthor().getId()).get();
+
+            Optional<UserBlock> optionalUserBlock3 = userBlockRepository.findByBlockerAndBlocked(saver, savedCommentPostOwner);
+
+            if(optionalUserBlock3.isPresent()) {
+                throw new KnewitException("CANNOT_SAVE", "Post owner has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserFollow> optionalUserBlock4 = userBlockRepository.findByBlockerAndBlocked(savedCommentPostOwner, saver);
+
+            if(optionalUserBlock4.isPresent()) {
+                throw new KnewitException("CANNOT_SAVE", "Post owner has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<CommentSave> optionalCommentSave = commentSaveRepository.findBySaverAndSaved(saver, saved);
+            if(optionalCommentSave.isPresent()) {
+                throw new KnewitException("ALREADY_SAVED", "You have already saved", HttpStatus.BAD_REQUEST);
+            } else {
+                CommentSave commentSave = CommentSave.builder()
+                        .saver(saver)
+                        .saved(saved)
+                        .build();
+
+                commentSaveRepository.save(commentSave);
+            }
+        }
+
+        return "Saved successfully.";
+    }
+
+    @Transactional
+    public void unsave(Long userId, String entity, Long entityId) {
+        User saver = userRepository.findById(userId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Saver user not found", HttpStatus.NOT_FOUND));
+
+        if(entity.equalsIgnoreCase("USER")) {
+            User saved = userRepository.findById(entityId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Saved user not found", HttpStatus.NOT_FOUND));
+
+            userSaveRepository.deleteBySaverAndSaved(saver, saved);
+        } else if(entity.equalsIgnoreCase("POST")) {
+            Post saved = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Saved post not found", HttpStatus.NOT_FOUND));
+
+            postSaveRepository.deleteBySaverAndSaved(saver, saved);
+        } else if(entity.equalsIgnoreCase("COMMENT")) {
+            Comment saved = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Saved comment not found", HttpStatus.NOT_FOUND));
+
+            commentSaveRepository.deleteBySaverAndSaved(saver, saved);
+        }
+    }
+
+
+    /* FOLLOW FEATURE METHODS */
+
+    public Map<?,?> getAllFollows(Long followerId) {
         User follower = userRepository.findById(followerId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Follower user not found", HttpStatus.NOT_FOUND));
-        User followed = userRepository.findByUsername(followedUsername)
-                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Followed user not found", HttpStatus.NOT_FOUND));
 
-        if (follower.getId().equals(followed.getId())) {
-            throw new KnewitException("CANNOT_FOLLOW_SELF", "Users cannot follow themselves", HttpStatus.CONFLICT);
-        }
+        List<UserFollow> userFollows = userFollowRepository.findAllByFollower(follower);
+        List<PostFollow> postFollows = postFollowRepository.findAllByFollower(follower);
+        List<CommentFollow> commentFollows = commentFollowRepository.findAllByFollower(follower);
 
-        if (userFollowRepository.existsByFollowerIdAndFollowedId(follower.getId(), followed.getId())) {
-            throw new KnewitException("ALREADY_FOLLOWING", "Already following this user", HttpStatus.CONFLICT);
-        }
+        Map<String, List<?>> response = new HashMap<>();
 
-        UserFollow follow = UserFollow.builder()
-                .follower(follower)
-                .followed(followed)
-                .build();
-        userFollowRepository.save(follow);
+        response.put("followedUsers", userFollows);
+        response.put("followedPosts", postFollows);
+        response.put("followedComments", commentFollows);
 
-        long followingCount = userFollowRepository.countByFollowerId(follower.getId());
-        return new FollowUserResponse(true, followingCount);
+        return response;
     }
 
     @Transactional
-    public void unfollow(Long followerId, String followedUsername) {
-        User followed = userRepository.findByUsername(followedUsername)
-                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Followed user not found", HttpStatus.NOT_FOUND));
+    public String follow(Long userId, String entity, Long entityId) {
+        User follower = userRepository.findById(userId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Follower user not found", HttpStatus.NOT_FOUND));
 
-        if (!userFollowRepository.existsByFollowerIdAndFollowedId(followerId, followed.getId())) {
-            throw new KnewitException("NOT_FOLLOWING", "You are not following this user", HttpStatus.CONFLICT);
+        if(entity.equalsIgnoreCase("USER")) {
+            User followed = userRepository.findById(entityId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Followed user not found", HttpStatus.NOT_FOUND));
+
+            Optional<UserBlock> optionalUserBlock1 = userBlockRepository.findByBlockerAndBlocked(follower, followed);
+
+            if(optionalUserBlock1.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Followed has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserBlock> optionalUserBlock2 = userBlockRepository.findByBlockerAndBlocked(followed, follower);
+
+            if(optionalUserBlock2.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Followed has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserFollow> optionalUserFollow = userFollowRepository.findByFollowerAndFollowed(follower, followed);
+            if(optionalUserFollow.isPresent()) {
+                throw new KnewitException("ALREADY_FOLLOWING", "You are already following", HttpStatus.BAD_REQUEST);
+            } else {
+                UserFollow userFollow = UserFollow.builder()
+                        .follower(follower)
+                        .followed(followed)
+                        .build();
+
+                userFollowRepository.save(userFollow);
+            }
+        }
+        else if(entity.equalsIgnoreCase("POST")) {
+            Post followed = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Followed post not found", HttpStatus.NOT_FOUND));
+
+            Optional<UserBlock> optionalUserBlock1 = userBlockRepository.findByBlockerAndBlocked(follower, followed.getAuthor());
+
+            if(optionalUserBlock1.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Post owner has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserBlock> optionalUserBlock2 = userBlockRepository.findByBlockerAndBlocked(followed.getAuthor(), follower);
+
+            if(optionalUserBlock2.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Post owner has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<PostFollow> optionalPostFollow = postFollowRepository.findByFollowerAndFollowed(follower, followed);
+
+            if(optionalPostFollow.isPresent()) {
+                throw new KnewitException("ALREADY_FOLLOWING", "You are already following", HttpStatus.BAD_REQUEST);
+            } else {
+                PostFollow postFollow = PostFollow.builder()
+                        .follower(follower)
+                        .followed(followed)
+                        .build();
+
+                postFollowRepository.save(postFollow);
+            }
+        }
+        else if(entity.equalsIgnoreCase("COMMENT")) {
+            Comment followed = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Followed comment not found", HttpStatus.NOT_FOUND));
+
+            User followedCommentOwner = userRepository.findById(followed.getAuthor().getId()).get();
+
+            Optional<UserBlock> optionalUserBlock1 = userBlockRepository.findByBlockerAndBlocked(follower, followedCommentOwner);
+
+            if(optionalUserBlock1.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Comment owner has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserBlock> optionalUserBlock2 = userBlockRepository.findByBlockerAndBlocked(followedCommentOwner, follower);
+
+            if(optionalUserBlock2.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Comment owner has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            User followedCommentPostOwner = userRepository.findById(postRepository.findById(followed.getPost().getId()).getAuthor().getId()).get();
+
+            Optional<UserBlock> optionalUserBlock3 = userBlockRepository.findByBlockerAndBlocked(follower, followedCommentPostOwner);
+
+            if(optionalUserBlock3.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Post owner has already been blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<UserFollow> optionalUserBlock4 = userBlockRepository.findByBlockerAndBlocked(followedCommentPostOwner, follower);
+
+            if(optionalUserBlock4.isPresent()) {
+                throw new KnewitException("CANNOT_FOLLOW", "Post owner has already blocked you", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<CommentFollow> optionalCommentFollow = commentFollowRepository.findByFollowerAndFollowed(follower, followed);
+            if(optionalCommentFollow.isPresent()) {
+                throw new KnewitException("ALREADY_FOLLOWING", "You are already following", HttpStatus.BAD_REQUEST);
+            } else {
+                CommentFollow commentFollow = CommentFollow.builder()
+                        .follower(follower)
+                        .followed(followed)
+                        .build();
+
+                commentFollowRepository.save(commentFollow);
+            }
         }
 
-        userFollowRepository.deleteByFollowerIdAndFollowedId(followerId, followed.getId());
+        return "Followed successfully.";
     }
 
     @Transactional
-    public BlockUserResponse block(Long blockerId, String blockedUsername) {
+    public String unfollow(Long userId, String entity, Long entityId) {
+        User follower = userRepository.findById(userId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Follower user not found", HttpStatus.NOT_FOUND));
+
+        if(entity.equalsIgnoreCase("USER")) {
+            User followed = userRepository.findById(entityId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Followed user not found", HttpStatus.NOT_FOUND));
+
+            userFollowRepository.deleteByFollowerAndFollowed(follower, followed);
+        } else if(entity.equalsIgnoreCase("POST")) {
+            Post followed = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Followed post not found", HttpStatus.NOT_FOUND));
+
+            postFollowRepository.deleteByFollowerAndFollowed(follower, followed);
+        } else if(entity.equalsIgnoreCase("COMMENT")) {
+            Comment followed = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Followed comment not found", HttpStatus.NOT_FOUND));
+
+            commentFollowRepository.deleteByFollowerAndFollowed(follower, followed);
+        }
+
+        return "Unfollowed successfully";
+    }
+
+
+    /* BLOCK FEATURE METHODS */
+
+    public Map<?,?> getAllBlocks(Long blockerId) {
         User blocker = userRepository.findById(blockerId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocker user not found", HttpStatus.NOT_FOUND));
-        User blocked = userRepository.findByUsername(blockedUsername)
-                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocked user not found", HttpStatus.NOT_FOUND));
 
-        if (blocker.getId().equals(blocked.getId())) {
-            throw new KnewitException("CANNOT_BLOCK_SELF", "Users cannot block themselves", HttpStatus.CONFLICT);
-        }
+        List<UserBlock> userBlocks = userBlockRepository.findAllByBlocker(blocker);
+        List<PostBlock> postBlocks = postBlockRepository.findAllByBlocker(blocker);
+        List<CommentBlock> commentBlocks = commentBlockRepository.findAllByBlocker(blocker);
 
-        if (userBlockRepository.existsByBlockerIdAndBlockedId(blocker.getId(), blocked.getId())) {
-            throw new KnewitException("ALREADY_BLOCKED", "User is already blocked", HttpStatus.CONFLICT);
-        }
+        Map<String, List<?>> response = new HashMap<>();
 
-        // Auto unfollow if they block
-        userFollowRepository.deleteByFollowerIdAndFollowedId(blocker.getId(), blocked.getId());
-        userFollowRepository.deleteByFollowerIdAndFollowedId(blocked.getId(), blocker.getId());
+        response.put("blockedUsers", userBlocks);
+        response.put("blockedPosts", postBlocks);
+        response.put("blockedComments", commentBlocks);
 
-        UserBlock block = UserBlock.builder()
-                .blocker(blocker)
-                .blocked(blocked)
-                .build();
-        userBlockRepository.save(block);
-
-        return new BlockUserResponse(true);
+        return response;
     }
 
     @Transactional
-    public void unblock(Long blockerId, String blockedUsername) {
-        User blocked = userRepository.findByUsername(blockedUsername)
-                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocked user not found", HttpStatus.NOT_FOUND));
+    public String block(Long userId, String entity, Long entityId) {
+        User blocker = userRepository.findById(userId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocker user not found", HttpStatus.NOT_FOUND));
 
-        if (!userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, blocked.getId())) {
-            throw new KnewitException("NOT_BLOCKED", "User is not blocked", HttpStatus.CONFLICT);
+        if(entity.equalsIgnoreCase("USER")) {
+            User blocked = userRepository.findById(entityId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocked user not found", HttpStatus.NOT_FOUND));
+
+            Optional<UserBlock> optionalUserBlock = userBlockRepository.findByBlockerAndBlocked(blocker, blocked);
+
+            if(optionalUserBlock.isPresent()) {
+                throw new KnewitException("ALREADY_BLOCKED", "You have already blocked this user", HttpStatus.BAD_REQUEST);
+            } else {
+                UserBlock userBlock = UserBlock.builder()
+                        .blocker(blocker)
+                        .blocked(blocked)
+                        .build();
+
+                userBlockRepository.save(userBlock);
+            }
+        }
+        else if(entity.equalsIgnoreCase("POST")) {
+            Post blocked = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Blocked post not found", HttpStatus.NOT_FOUND));
+
+            Optional<PostBlock> optionalPostBlock = postBlockRepository.findByBlockerAndBlocked(blocker, blocked);
+
+            if(optionalPostBlock.isPresent() || optionalUserBlock.isPresent()) {
+                throw new KnewitException("ALREADY_BLOCKED", "You have already blocking", HttpStatus.BAD_REQUEST);
+            } else {
+                PostBlock postBlock = PostBlock.builder()
+                        .blocker(blocker)
+                        .blocked(blocked)
+                        .build();
+
+                postBlockRepository.save(postBlock);
+            }
+        }
+        else if(entity.equalsIgnoreCase("COMMENT")) {
+            Comment blocked = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Blocked comment not found", HttpStatus.NOT_FOUND));
+
+            Optional<CommentBlock> optionalCommentBlock = commentBlockRepository.findByBlockerAndBlocked(blocker, blocked);
+
+            if(optionalCommentBlock.isPresent()) {
+                throw new KnewitException("ALREADY_BLOCKED", "You have already blocked", HttpStatus.BAD_REQUEST);
+            } else {
+                CommentBlock commentBlock = CommentBlock.builder()
+                        .blocker(blocker)
+                        .blocked(blocked)
+                        .build();
+
+                commentBlockRepository.save(commentBlock);
+            }
         }
 
-        userBlockRepository.deleteByBlockerIdAndBlockedId(blockerId, blocked.getId());
+        unfollow(userId, entity, entityId);
+        unsave(userId, entity, entityId);
+
+        return "Blocked successfully.";
     }
 
     @Transactional
-    public ReportUserResponse report(Long reporterId, String reportedUsername, String reason, String details) {
-        User reporter = userRepository.findById(reporterId)
-                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Reporter user not found", HttpStatus.NOT_FOUND));
-        User reported = userRepository.findByUsername(reportedUsername)
-                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Reported user not found", HttpStatus.NOT_FOUND));
+    public String unblock(Long userId, String entity, Long entityId) {
+        User blocker = userRepository.findById(userId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocker user not found", HttpStatus.NOT_FOUND));
 
-        UserReport report = UserReport.builder()
-                .reporter(reporter)
-                .reported(reported)
-                .reason(reason)
-                .details(details)
-                .status(ReportStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .build();
-        UserReport savedUserReport = userReportRepository.save(report);
+        if(entity.equalsIgnoreCase("USER")) {
+            User blocked = userRepository.findById(entityId).orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Blocked user not found", HttpStatus.NOT_FOUND));
 
-        return new ReportUserResponse(true, savedUserReport.getId());
+            userBlockRepository.deleteByBlockerIdAndBlockedId(blocker.getId(), blocked.getId());
+        } else if(entity.equalsIgnoreCase("POST")) {
+            Post blocked = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Blocked post not found", HttpStatus.NOT_FOUND));
+
+            postBlockRepository.deleteByBlockerIdAndBlockedId(blocker.getId(), blocked.getId());
+        } else if(entity.equalsIgnoreCase("COMMENT")) {
+            Comment blocked = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Blocked comment not found", HttpStatus.NOT_FOUND));
+
+            commentBlockRepository.deleteByBlockerIdAndBlockedId(blocker.getId(), blocked.getId());
+        }
+
+        return "Unblocked successfully";
     }
+
+
+    /*-------------------------------------------------------------------*/
 
     private UserProfileDto getUserProfileDto(User user) {
         List<Topic> interests = userInterestRepository.findAllByUserId(user.getId()).stream()

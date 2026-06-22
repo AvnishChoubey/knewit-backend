@@ -15,7 +15,6 @@ import java.util.List;
 public class UserProfileDto {
     private long id;
     private String username;
-    private String displayName;
     private String bio;
     private String avatarUrl;
     private String avatarPublicId;

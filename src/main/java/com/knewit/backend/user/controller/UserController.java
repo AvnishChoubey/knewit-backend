@@ -1,103 +1,101 @@
 package com.knewit.backend.user.controller;
 
-//import com.knewit.backend.auth.dto.AuthenticatedUserDto;
-//import com.knewit.backend.config.JwtConfig;
 import com.knewit.backend.user.dto.*;
+import com.knewit.backend.user.entity.UserFollow;
 import com.knewit.backend.user.service.UserService;
-//import io.jsonwebtoken.Jwts;
-//import io.jsonwebtoken.security.Keys;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/user")
 @RequiredArgsConstructor
 public class UserController {
 
     @Autowired private UserService userService;
-//    @Autowired private JwtConfig jwtConfig;
 
-    @GetMapping("/user/me")
-    public ResponseEntity<AuthenticatedUserDto> getMe(@RequestHeader("Authorization") String authHeader) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(userService.getMe(userId));
-    }
+    /* PROFILE APIS */
 
-    @PatchMapping("/profile/me")
-    public ResponseEntity<UserProfileDto> updateProfile(
-            @RequestHeader("Authorization") String authHeader,
-            @Valid @RequestBody UpdateMyProfileRequest request) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(userService.updateMyProfile(userId, request));
-    }
-
-    @GetMapping("/user/{username}")
-    public ResponseEntity<GetPublicUserResponse> getPublicUser(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @PathVariable String username) {
-        Long viewerId = (authHeader != null && !authHeader.isBlank()) ? getUserIdFromToken(authHeader) : 0L; // Dummy viewer if anonymous
-        return ResponseEntity.ok(userService.getPublicUser(viewerId, username));
-    }
-
-    @PostMapping("/user/{username}/follow")
-    public ResponseEntity<FollowUserResponse> follow(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String username) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(userService.follow(userId, username));
-    }
-
-    @DeleteMapping("/user/{username}/follow")
-    public ResponseEntity<Void> unfollow(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String username) {
-        Long userId = getUserIdFromToken(authHeader);
-        userService.unfollow(userId, username);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/user/{username}/block")
-    public ResponseEntity<BlockUserResponse> block(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String username) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(userService.block(userId, username));
-    }
-
-    @DeleteMapping("/user/{username}/block")
-    public ResponseEntity<Void> unblock(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String username) {
-        Long userId = getUserIdFromToken(authHeader);
-        userService.unblock(userId, username);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/user/{username}/report")
-    public ResponseEntity<ReportUserResponse> report(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String username,
-            @RequestParam String reason,
-            @RequestParam(required = false) String details) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(userService.report(userId, username, reason, details));
-    }
-
-//    private Long getUserIdFromToken(String authHeader) {
-//        String token = authHeader.replace("Bearer ", "");
-//        Key key = Keys.hmacShaKeyFor(jwtConfig.getSigningSecret().getBytes(StandardCharsets.UTF_8));
-//        String userIdStr = Jwts.parserBuilder()
-//                .setSigningKey(key)
-//                .build()
-//                .parseClaimsJws(token)
-//                .getBody()
-//                .getSubject();
-//        return Long.fromString(userIdStr);
+//    @GetMapping("/me")
+//    public ResponseEntity<AuthenticatedUserDto> getMe(@RequestHeader("Authorization") String authHeader) {
+//        Long userId = getUserIdFromToken(authHeader);
+//        return ResponseEntity.ok(userService.getMe(userId));
 //    }
+
+//    @GetMapping("/")
+//    public ResponseEntity<GetPublicUserResponse> getPublicUser(@RequestParam("username") String username) {
+//        Long viewerId = (authHeader != null && !authHeader.isBlank()) ? getUserIdFromToken(authHeader) : 0L; // Dummy viewer if anonymous
+//        return ResponseEntity.ok(userService.getPublicUser(viewerId, username));
+//    }
+
+    /*  SAVE APIS  */
+
+    @GetMapping("/user/{userId}/save")
+    public ResponseEntity<Map<?,?>> getAllSaves(@PathVariable("userId") Long userId) {
+        return ResponseEntity.ok(userService.getAllSaves(userId));
+    }
+
+    @PostMapping("/user/{userId}/save")
+    public ResponseEntity<Void> save(@PathVariable("userId") Long userId,
+                                     @RequestParam(name = "entity") String entity,
+                                     @RequestParam("entityId") Long entityId) {
+        userService.save(userId, entity, entityId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/user/{userId}/save")
+    public ResponseEntity<Void> unsave(@PathVariable("userId") Long userId,
+                                       @RequestParam(name = "entity") String entity,
+                                       @RequestParam("entityId") Long entityId) {
+        userService.unsave(userId, entity, entityId);
+        return ResponseEntity.ok().build();
+    }
+
+    /*  FOLLOW APIS  */
+
+    @GetMapping("/user/{userId}/follow")
+    public ResponseEntity<Map<?,?>> getAllFollows(@PathVariable("userId") Long userId) {
+        return ResponseEntity.ok(userService.getAllFollows(userId));
+    }
+
+    @PostMapping("/user/{userId}/follow")
+    public ResponseEntity<String> follow(@PathVariable("userId") Long userId,
+                                         @RequestParam("entity") String entity,
+                                         @RequestParam("entityId") Long entityId) {
+        return ResponseEntity.ok(userService.follow(userId, entity, entityId));
+    }
+
+    @DeleteMapping("/user/{userId}/follow")
+    public ResponseEntity<String> unfollow(@PathVariable("userId") Long userId,
+                                         @RequestParam("entity") String entity,
+                                         @RequestParam("entityId") Long entityId) {
+        return ResponseEntity.ok(userService.unfollow(userId, entity, entityId));
+    }
+
+    /*  BLOCK APIS  */
+
+    @GetMapping("/user/{userId}/block")
+    public ResponseEntity<Map<?,?>> getAllBlocks(@PathVariable("userId") Long userId) {
+        return ResponseEntity.ok(userService.getAllBlocks(userId));
+    }
+
+    @PostMapping("/user/{userId}/block")
+    public ResponseEntity<String> block(@PathVariable("userId") Long userId,
+                                        @RequestParam("entity") String entity,
+                                        @RequestParam("entityId") Long entityId) {
+
+        return ResponseEntity.ok(userService.block(userId, entity, entityId));
+    }
+
+    @DeleteMapping("/user/{userId}/block")
+    public ResponseEntity<Void> unblock(@PathVariable("userId") Long userId,
+                                        @RequestParam("entity") String entity,
+                                        @RequestParam("entityId") Long entityId) {
+        userService.unblock(userId, entity, entityId);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FollowUserResponse {
+public class FollowResponse {
     private boolean following;
     private long followingCount;
 }
