@@ -15,14 +15,20 @@ public class MediaController {
     private final MediaService mediaService;
 
     @PostMapping("/upload")
-    public ResponseEntity<MediaUploadResponse>
-    uploadFile(
+    public ResponseEntity<MediaUploadResponse> uploadFile(
             @RequestParam("file")
-            MultipartFile file
+            MultipartFile file,
+            @RequestParam(
+                    defaultValue = "knewit/posts"
+            )
+            String folder
     ) {
 
         return ResponseEntity.ok(
-                mediaService.uploadFile(file)
+                mediaService.uploadFile(
+                        file,
+                        folder
+                )
         );
     }
 }

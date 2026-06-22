@@ -41,6 +41,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             PostStatus postStatus
     );
 
+    Page<Post> findBySubreddit_IdAndPostStatus(
+            Long subredditId,
+            PostStatus postStatus,
+            Pageable pageable
+    );
+
     Page<Post> findBySubreddit_NameAndPostStatus(
             String subredditName,
             PostStatus postStatus,

@@ -2,23 +2,23 @@ package com.knewit.backend.post.service;
 
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.auth.repository.UserRepository;
+import com.knewit.backend.common.dto.MediaUploadResponse;
 import com.knewit.backend.common.enums.VoteType;
+import com.knewit.backend.common.service.MediaService;
 import com.knewit.backend.post.dto.CreatePostRequest;
 import com.knewit.backend.post.dto.PostDto;
 import com.knewit.backend.post.dto.UpdatePostRequest;
-import com.knewit.backend.post.entity.Post;
-import com.knewit.backend.post.entity.PostMedia;
-import com.knewit.backend.post.entity.PostSave;
-import com.knewit.backend.post.entity.PostVote;
+import com.knewit.backend.post.entity.*;
 import com.knewit.backend.post.enums.FeedSort;
 import com.knewit.backend.post.enums.MediaType;
 import com.knewit.backend.post.enums.PostStatus;
 import com.knewit.backend.post.enums.PostType;
-import com.knewit.backend.post.repository.PostMediaRepository;
-import com.knewit.backend.post.repository.PostRepository;
-import com.knewit.backend.post.repository.PostSaveRepository;
-import com.knewit.backend.post.repository.PostVoteRepository;
+import com.knewit.backend.post.repository.*;
 import com.knewit.backend.subreddit.entity.Subreddit;
+import com.knewit.backend.subreddit.enums.MemberStatus;
+import com.knewit.backend.subreddit.enums.PostingPolicy;
+import com.knewit.backend.subreddit.enums.Visibility;
+import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.knewit.backend.post.dto.VotePostRequest;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,13 +41,17 @@ public class PostService {
     private final PostMediaRepository postMediaRepository;
     private final PostVoteRepository postVoteRepository;
     private final PostSaveRepository postSaveRepository;
-
+    private final MediaService mediaService;
     private final SubredditRepository subredditRepository;
     private final UserRepository userRepository;
+    private final SubredditMemberRepository subredditMemberRepository;
+    private final PostFollowerRepository postFollowerRepository;
 
     @Transactional
-    public PostDto createPost(Long authorId,
-                              CreatePostRequest request) {
+    public PostDto createPost(
+            Long authorId,
+            CreatePostRequest request
+    ) {
 
         Subreddit subreddit = subredditRepository
                 .findByName(request.getSubredditName())
@@ -63,6 +68,55 @@ public class PostService {
                         request.getType().toUpperCase()
                 );
 
+        if (subreddit.getVisibility() == Visibility.PRIVATE) {
+
+            boolean isApprovedMember =
+                    subredditMemberRepository
+                            .existsBySubreddit_IdAndUser_IdAndMemberStatus(
+                                    subreddit.getId(),
+                                    authorId,
+                                    MemberStatus.APPROVED
+                            );
+
+            if (!isApprovedMember) {
+                throw new RuntimeException(
+                        "Only approved members can post in private subreddits"
+                );
+            }
+        }
+
+        if ((postType == PostType.IMAGE
+                || postType == PostType.VIDEO)
+                && request.getMedia() == null) {
+
+            throw new RuntimeException(
+                    "Media file is required"
+            );
+        }
+
+        if (postType == PostType.TEXT
+                && (request.getBody() == null
+                || request.getBody().isBlank())) {
+
+            throw new RuntimeException(
+                    "Body is required for text posts"
+            );
+        }
+
+        if (postType == PostType.URL
+                && (request.getExternalUrl() == null
+                || request.getExternalUrl().isBlank())) {
+
+            throw new RuntimeException(
+                    "External URL is required"
+            );
+        }
+
+        PostStatus postStatus =
+                subreddit.getPostingPolicy() == PostingPolicy.RESTRICTED
+                        ? PostStatus.PENDING_APPROVAL
+                        : PostStatus.PUBLISHED;
+
         Post post = Post.builder()
                 .subreddit(subreddit)
                 .author(author)
@@ -70,7 +124,7 @@ public class PostService {
                 .title(request.getTitle())
                 .body(request.getBody())
                 .externalUrl(request.getExternalUrl())
-                .postStatus(PostStatus.PUBLISHED)
+                .postStatus(postStatus)
                 .upvoteCount(1L)
                 .downvoteCount(0L)
                 .shareCount(0L)
@@ -95,6 +149,12 @@ public class PostService {
         if (postType == PostType.IMAGE
                 || postType == PostType.VIDEO) {
 
+            MediaUploadResponse mediaUploadResponse =
+                    mediaService.uploadFile(
+                            request.getMedia(),
+                            "knewit/posts"
+                    );
+
             PostMedia media = PostMedia.builder()
                     .post(post)
                     .mediaType(
@@ -102,15 +162,119 @@ public class PostService {
                                     ? MediaType.VIDEO
                                     : MediaType.IMAGE
                     )
-                    .cloudinaryUrl(request.getMediaUrl())
-                    .cloudinaryPublicId(
-                            request.getMediaPublicId()
+                    .cloudinaryUrl(
+                            mediaUploadResponse.getUrl()
                     )
-                    .byteSize(0L)
+                    .cloudinaryPublicId(
+                            mediaUploadResponse.getPublicId()
+                    )
+                    .byteSize(
+                            request.getMedia().getSize()
+                    )
                     .build();
 
             postMediaRepository.save(media);
         }
+
+        if (postStatus == PostStatus.PUBLISHED) {
+
+            subreddit.setPostCount(
+                    subreddit.getPostCount() + 1
+            );
+
+            subredditRepository.save(subreddit);
+        }
+
+        return convertToDto(
+                post,
+                author.getId()
+        );
+    }
+
+    @Transactional
+    public PostDto rejectPost(
+            Long postId,
+            Long moderatorId
+    ) {
+
+        Post post = postRepository
+                .findById(postId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Post not found"
+                        ));
+
+        if (post.getPostStatus() != PostStatus.PENDING_APPROVAL) {
+            throw new RuntimeException(
+                    "Post is not pending approval"
+            );
+        }
+
+        boolean isModerator =
+                subredditMemberRepository
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+                                post.getSubreddit().getId(),
+                                moderatorId
+                        );
+
+        if (!isModerator) {
+            throw new RuntimeException(
+                    "Only moderators can reject posts"
+            );
+        }
+
+        post.setPostStatus(
+                PostStatus.REMOVED
+        );
+
+        postRepository.save(post);
+
+        return convertToDto(
+                post,
+                moderatorId
+        );
+    }
+
+
+    @Transactional
+    public PostDto approvePost(
+            Long postId,
+            Long moderatorId
+    ) {
+
+        Post post = postRepository
+                .findById(postId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Post not found"
+                        ));
+
+        if (post.getPostStatus() != PostStatus.PENDING_APPROVAL) {
+            throw new RuntimeException(
+                    "Post is not pending approval"
+            );
+        }
+
+        boolean isModerator =
+                subredditMemberRepository
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+                                post.getSubreddit().getId(),
+                                moderatorId
+                        );
+
+        if (!isModerator) {
+            throw new RuntimeException(
+                    "Only moderators can approve posts"
+            );
+        }
+
+        post.setPostStatus(
+                PostStatus.PUBLISHED
+        );
+
+        postRepository.save(post);
+
+        Subreddit subreddit = post.getSubreddit();
 
         subreddit.setPostCount(
                 subreddit.getPostCount() + 1
@@ -120,9 +284,54 @@ public class PostService {
 
         return convertToDto(
                 post,
-                author.getId()
+                moderatorId
         );
     }
+
+
+    @Transactional(readOnly = true)
+    public Page<PostDto> getPendingPosts(
+            Long subredditId,
+            Long moderatorId,
+            int page,
+            int size
+    ) {
+
+        boolean isModerator =
+                subredditMemberRepository
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+                                subredditId,
+                                moderatorId
+                        );
+
+        if (!isModerator) {
+            throw new RuntimeException(
+                    "Only moderators can view pending posts"
+            );
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                        Sort.Direction.DESC,
+                        "createdAt"
+                )
+        );
+
+        return postRepository
+                .findBySubreddit_IdAndPostStatus(
+                        subredditId,
+                        PostStatus.PENDING_APPROVAL,
+                        pageable
+                )
+                .map(post -> convertToDto(
+                        post,
+                        moderatorId
+                ));
+    }
+
+
 
     @Transactional
     public PostDto updatePost(
@@ -163,6 +372,28 @@ public class PostService {
             int page,
             int size
     ) {
+
+        Subreddit subreddit = subredditRepository
+                .findByName(subredditName)
+                .orElseThrow(() ->
+                        new RuntimeException("Subreddit not found"));
+
+        if (subreddit.getVisibility() == Visibility.PRIVATE) {
+
+            boolean isApprovedMember =
+                    subredditMemberRepository
+                            .existsBySubreddit_IdAndUser_IdAndMemberStatus(
+                                    subreddit.getId(),
+                                    viewerId,
+                                    MemberStatus.APPROVED
+                            );
+
+            if (!isApprovedMember) {
+                throw new RuntimeException(
+                        "This is a private subreddit"
+                );
+            }
+        }
 
         Pageable pageable = PageRequest.of(
                 page,
@@ -498,10 +729,87 @@ public class PostService {
                         ));
     }
 
+    @Transactional(readOnly = true)
+    public List<PostDto> getFollowedPosts(
+            Long userId
+    ) {
+
+        return postFollowerRepository
+                .findByUser_Id(userId)
+                .stream()
+                .map(PostFollower::getPost)
+                .map(post ->
+                        convertToDto(
+                                post,
+                                userId
+                        )
+                )
+                .toList();
+    }
+
+    @Transactional
+    public Boolean toggleFollowPost(
+            Long postId,
+            Long userId
+    ) {
+
+        Post post = postRepository
+                .findById(postId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Post not found"
+                        ));
+
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found"
+                        ));
+
+        Optional<PostFollower> existingFollow =
+                postFollowerRepository
+                        .findByPost_IdAndUser_Id(
+                                postId,
+                                userId
+                        );
+
+        if (existingFollow.isPresent()) {
+
+            postFollowerRepository.delete(
+                    existingFollow.get()
+            );
+
+            return false;
+        }
+
+        PostFollower follower =
+                PostFollower.builder()
+                        .post(post)
+                        .user(user)
+                        .build();
+
+        postFollowerRepository.save(follower);
+
+        return true;
+    }
+
     private PostDto convertToDto(
             Post post,
             Long viewerId
     ) {
+
+        boolean followed = false;
+
+        if (viewerId != null) {
+
+            followed =
+                    postFollowerRepository
+                            .existsByPost_IdAndUser_Id(
+                                    post.getId(),
+                                    viewerId
+                            );
+        }
 
         boolean saved = false;
 
@@ -562,6 +870,7 @@ public class PostService {
                 .createdAt(post.getCreatedAt().toString())
                 .votedState(votedState)
                 .saved(saved)
+                .followed(followed)
                 .build();
     }
 

@@ -38,6 +38,8 @@ public class Post {
     @Column(nullable = false)
     private PostType type; // TEXT, IMAGE, VIDEO, URL
 
+    private Long followerCount;
+
     @Column(nullable = false, length = 300)
     private String title;
 

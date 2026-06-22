@@ -21,6 +21,8 @@ public class PostDto {
 
     private Boolean saved;
 
+    private Boolean followed;
+
     private String body;
 
     private String mediaUrl;
