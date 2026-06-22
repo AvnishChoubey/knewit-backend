@@ -6,9 +6,11 @@ import com.knewit.backend.comment.dto.CommentDto;
 import com.knewit.backend.comment.dto.CreateCommentRequest;
 import com.knewit.backend.comment.dto.UpdateCommentRequest;
 import com.knewit.backend.comment.entity.Comment;
+import com.knewit.backend.comment.entity.CommentSave;
 import com.knewit.backend.comment.entity.CommentVote;
 import com.knewit.backend.comment.enums.CommentStatus;
 import com.knewit.backend.comment.repository.CommentRepository;
+import com.knewit.backend.comment.repository.CommentSaveRepository;
 import com.knewit.backend.comment.repository.CommentVoteRepository;
 import com.knewit.backend.common.enums.VoteType;
 import com.knewit.backend.post.entity.Post;
@@ -16,6 +18,7 @@ import com.knewit.backend.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 
@@ -32,21 +35,22 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
+    private final CommentSaveRepository commentSaveRepository;
+
     private CommentDto convertToDto(
             Comment comment,
             Long viewerId
     ) {
 
+        boolean saved = false;
+
         String votedState = "NONE";
 
         if (viewerId != null) {
 
-            CommentVote vote = commentVoteRepository
-                    .findByComment_IdAndUser_Id(
-                            comment.getId(),
-                            viewerId
-                    )
-                    .orElse(null);
+            saved = commentSaveRepository.existsByComment_IdAndUser_Id(comment.getId(), viewerId);
+
+            CommentVote vote = commentVoteRepository.findByComment_IdAndUser_Id(comment.getId(), viewerId).orElse(null);
 
             if (vote != null) {
                 votedState = vote.getVoteType().name();
@@ -85,6 +89,9 @@ public class CommentService {
                 .createdAt(
                         comment.getCreatedAt().toString()
                 )
+                .saved(
+                        saved
+                )
                 .votedState(
                         votedState
                 )
@@ -97,17 +104,9 @@ public class CommentService {
             Long viewerId
     ) {
 
-        return commentRepository
-                .findAllByPost_IdAndCommentStatus(
-                        postId,
-                        CommentStatus.PUBLISHED
-                )
+        return commentRepository.findAllByPost_IdAndCommentStatus(postId, CommentStatus.PUBLISHED)
                 .stream()
-                .map(comment ->
-                        convertToDto(
-                                comment,
-                                viewerId
-                        ))
+                .map(comment -> convertToDto(comment, viewerId))
                 .toList();
     }
 
@@ -214,6 +213,53 @@ public class CommentService {
         }
 
         commentRepository.save(comment);
+    }
+
+    @Transactional
+    public void toggleSaveComment(
+            Long commentId,
+            Long userId
+    ) {
+
+        Comment comment =
+                commentRepository
+                        .findById(commentId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Comment not found"
+                                ));
+
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                ));
+
+        CommentSave existingSave =
+                commentSaveRepository
+                        .findByComment_IdAndUser_Id(
+                                commentId,
+                                userId
+                        )
+                        .orElse(null);
+
+        if (existingSave != null) {
+
+            commentSaveRepository
+                    .delete(existingSave);
+
+            return;
+        }
+
+        CommentSave save =
+                CommentSave.builder()
+                        .comment(comment)
+                        .user(user)
+                        .build();
+
+        commentSaveRepository.save(save);
     }
 
     @Transactional

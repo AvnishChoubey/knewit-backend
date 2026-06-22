@@ -32,5 +32,7 @@ public class CommentDto {
 
     private String createdAt;
 
+    private Boolean saved;
+
     private String votedState;
 }

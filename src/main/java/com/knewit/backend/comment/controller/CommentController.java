@@ -35,6 +35,24 @@ public class CommentController {
         );
     }
 
+    @PostMapping(
+            "/comments/{commentId}/save"
+    )
+    public ResponseEntity<String> saveComment(
+            @PathVariable Long commentId,
+            @RequestParam Long userId
+    ) {
+
+        commentService.toggleSaveComment(
+                commentId,
+                userId
+        );
+
+        return ResponseEntity.ok(
+                "Comment save status updated"
+        );
+    }
+
 
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<String> deleteComment(
