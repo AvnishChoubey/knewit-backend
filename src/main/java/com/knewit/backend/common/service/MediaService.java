@@ -23,8 +23,6 @@ public class MediaService {
             String folder
     ) {
 
-        long totalStart = System.currentTimeMillis();
-
         try {
 
             String contentType = file.getContentType();
@@ -34,10 +32,6 @@ public class MediaService {
             if (contentType != null &&
                     contentType.startsWith("video")) {
 
-                System.out.println("Detected Media Type : VIDEO");
-
-                long transferStart = System.currentTimeMillis();
-
                 File tempFile = File.createTempFile(
                         "video-upload-",
                         ".tmp"
@@ -45,31 +39,22 @@ public class MediaService {
 
                 file.transferTo(tempFile);
 
-
-
-
-
                 try {
 
-                    result = cloudinary.uploader().upload(
+                    result = cloudinary.uploader().uploadLarge(
                             tempFile,
                             ObjectUtils.asMap(
                                     "folder", folder,
                                     "resource_type", "video"
                             )
                     );
+
                 } finally {
 
-                    boolean deleted = tempFile.delete();
-
+                    tempFile.delete();
                 }
 
-
-
             } else {
-
-                System.out.println("Detected Media Type : IMAGE");
-
 
                 result = cloudinary.uploader().upload(
                         file.getBytes(),
@@ -78,14 +63,7 @@ public class MediaService {
                                 "resource_type", "image"
                         )
                 );
-
             }
-
-            System.out.println(
-                    "Cloudinary URL : "
-                            + result.get("secure_url")
-            );
-
 
             return MediaUploadResponse.builder()
                     .url(
@@ -99,9 +77,6 @@ public class MediaService {
                     .build();
 
         } catch (Exception e) {
-
-
-            e.printStackTrace();
 
             throw new KnewitException(
                     "FILE_UPLOAD_FAILED",
