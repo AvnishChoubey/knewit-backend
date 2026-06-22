@@ -33,6 +33,9 @@ public class ChatMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
+    @Column(name = "message_type", nullable = false, length = 50)
+    private MessageType messageType; // TEXT, SYSTEM, MEDIA
+
     @Column(name = "attachment_url", columnDefinition = "TEXT")
     private String attachmentUrl;
 
@@ -43,7 +46,6 @@ public class ChatMessage {
     private LocalDateTime sentAt;
 
     @Column(name = "edited_at")
-    @UpdateTimestamp
     private LocalDateTime editedAt;
 
     @Column(name = "deleted_at")
@@ -52,4 +54,8 @@ public class ChatMessage {
     @Column(name = "created_at", nullable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

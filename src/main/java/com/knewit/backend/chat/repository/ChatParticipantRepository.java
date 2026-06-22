@@ -8,8 +8,14 @@ import java.util.Optional;
 
 @Repository
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, Long> {
+
     List<ChatParticipant> findAllByUserId(Long userId);
+
     List<ChatParticipant> findAllByConversationId(Long conversationId);
+
     Optional<ChatParticipant> findByConversationIdAndUserId(Long conversationId, Long userId);
-    List<ChatParticipant> findAllByUserId(Long userId);
+
+    // This ensures we only fetch active conversations.
+    List<ChatParticipant> findByUserIdAndLeftAtIsNull(Long userId);
+
 }
