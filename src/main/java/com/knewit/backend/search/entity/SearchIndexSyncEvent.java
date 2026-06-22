@@ -22,7 +22,7 @@ public class SearchIndexSyncEvent {
     private String entityType;
 
     @Column(name = "entity_id", nullable = false)
-    private UUID entityId;
+    private Long entityId;
 
     @Column(nullable = false, length = 50)
     private String operation; // CREATE, UPDATE, DELETE

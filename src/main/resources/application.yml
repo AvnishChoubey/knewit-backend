@@ -3,6 +3,33 @@ spring:
     name: backend
   elasticsearch:
     uris: ${ES_URL:http://localhost:9200}
+  mail:
+    host: ${EMAIL_APP_HOST}
+    port: ${EMAIL_APP_PORT}
+    username: ${EMAIL_APP_USERNAME}
+    password: ${EMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+          auth: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id:
+            client-secret:
+            scope:
+              - email
+              - profile
+          facebook:
+            client-id:
+            client-secret:
+            scope:
+              - email
+              - public_profile
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/knewit}
     username: ${DB_USERNAME}
@@ -16,3 +43,25 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      enabled: truelogging.level.org.hibernate.SQL=DEBUG
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+
+logging:
+  level:
+    org:
+      hibernate:
+        orm:
+          jdbc:
+            bind: TRACE
+
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${COUDINARY_API_SECRET}
+
+secret-key:

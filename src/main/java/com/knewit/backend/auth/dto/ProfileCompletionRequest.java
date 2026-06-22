@@ -2,9 +2,18 @@ package com.knewit.backend.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ProfileCompletionRequest {
     @NotBlank(message = "Username is required")
     private String username;
@@ -13,6 +22,5 @@ public class ProfileCompletionRequest {
     private List<String> interests;
 
     private String bio;
-    private String avatarUrl;
-    private String avatarPublicId;
+    private MultipartFile avatar;
 }

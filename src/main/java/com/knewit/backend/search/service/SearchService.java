@@ -205,7 +205,7 @@ public class SearchService {
     }
 
     @Transactional
-    public void enqueueSyncEvent(String entityType, UUID entityId, String operation, Object payload) {
+    public void enqueueSyncEvent(String entityType, Long entityId, String operation, Object payload) {
         try {
             String jsonPayload = objectMapper.writeValueAsString(payload);
             SearchIndexSyncEvent event = SearchIndexSyncEvent.builder()
