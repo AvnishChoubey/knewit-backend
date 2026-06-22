@@ -19,6 +19,7 @@ import com.knewit.backend.subreddit.dto.JoinSubredditResponse;
 import com.knewit.backend.subreddit.entity.SubredditJoinRequest;
 import com.knewit.backend.subreddit.enums.SubredditJoinRequestStatus;
 import com.knewit.backend.subreddit.repository.SubredditJoinRequestRepository;
+import  com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +32,7 @@ public class SubredditService {
     private final SubredditMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final SubredditJoinRequestRepository joinRequestRepository;
+    private final SubredditMemberRepository subredditMemberRepository;
 
     public SubredditDto createSubreddit(Long creatorId, CreateSubredditRequest request) {
 
@@ -81,6 +83,72 @@ public class SubredditService {
                 .build();
 
         memberRepository.save(creatorMember);
+
+        return convertToDto(subreddit);
+    }
+
+    @Transactional
+    public SubredditDto makePublic(
+            Long subredditId,
+            Long moderatorId
+    ) {
+
+        Subreddit subreddit = subredditRepository
+                .findById(subredditId)
+                .orElseThrow(() ->
+                        new RuntimeException("Subreddit not found"));
+
+        boolean isModerator =
+                subredditMemberRepository
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+                                subredditId,
+                                moderatorId
+                        );
+
+        if (!isModerator) {
+            throw new RuntimeException(
+                    "Only moderators can change subreddit visibility"
+            );
+        }
+
+        subreddit.setVisibility(
+                Visibility.PUBLIC
+        );
+
+        subredditRepository.save(subreddit);
+
+        return convertToDto(subreddit);
+    }
+
+    @Transactional
+    public SubredditDto makePrivate(
+            Long subredditId,
+            Long moderatorId
+    ) {
+
+        Subreddit subreddit = subredditRepository
+                .findById(subredditId)
+                .orElseThrow(() ->
+                        new RuntimeException("Subreddit not found"));
+
+        boolean isModerator =
+                subredditMemberRepository
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+                                subredditId,
+                                moderatorId
+                        );
+
+        if (!isModerator) {
+            throw new RuntimeException(
+                    "Only moderators can change subreddit visibility"
+            );
+        }
+
+        subreddit.setVisibility(
+                Visibility.PRIVATE
+        );
+
+        subredditRepository.save(subreddit);
 
         return convertToDto(subreddit);
     }

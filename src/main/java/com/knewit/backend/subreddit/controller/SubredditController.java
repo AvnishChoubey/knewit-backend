@@ -82,6 +82,34 @@ public class SubredditController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{subredditId}/private")
+    public ResponseEntity<SubredditDto> makePrivate(
+            @PathVariable Long subredditId,
+            @RequestParam Long moderatorId
+    ) {
+
+        return ResponseEntity.ok(
+                subredditService.makePrivate(
+                        subredditId,
+                        moderatorId
+                )
+        );
+    }
+
+    @PatchMapping("/{subredditId}/public")
+    public ResponseEntity<SubredditDto> makePublic(
+            @PathVariable Long subredditId,
+            @RequestParam Long moderatorId
+    ) {
+
+        return ResponseEntity.ok(
+                subredditService.makePublic(
+                        subredditId,
+                        moderatorId
+                )
+        );
+    }
+
     @DeleteMapping("/{name}/moderators/{userId}")
     public ResponseEntity<Void> removeModerator(
             @PathVariable String name,
