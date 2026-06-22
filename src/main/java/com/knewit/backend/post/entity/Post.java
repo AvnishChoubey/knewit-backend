@@ -38,6 +38,8 @@ public class Post {
     @Column(nullable = false)
     private PostType type; // TEXT, IMAGE, VIDEO, URL
 
+    private Long followerCount;
+
     @Column(nullable = false, length = 300)
     private String title;
 
@@ -48,14 +50,10 @@ public class Post {
     private String externalUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "content_status", nullable = false)
+    @Column(name = "post_status", nullable = false)
     @Builder.Default
-    private PostStatus postStatus = PostStatus.PUBLISHED; // DRAFT, PENDING_APPROVAL, PUBLISHED, REMOVED, ARCHIVED
+    private PostStatus postStatus = PostStatus.PUBLISHED;// DRAFT, PENDING_APPROVAL, PUBLISHED, REMOVED, ARCHIVED
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
 
     @Column(name = "upvote_count", nullable = false)
     @Builder.Default

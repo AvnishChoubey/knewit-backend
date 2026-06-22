@@ -10,7 +10,18 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "post_votes")
+@Table(
+        name = "post_votes",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_post_vote_post_user",
+                        columnNames = {
+                                "post_id",
+                                "user_id"
+                        }
+                )
+        }
+)
 @Getter
 @Setter
 @Builder
@@ -28,6 +39,8 @@ public class PostVote {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
