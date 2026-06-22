@@ -3,6 +3,7 @@ package com.knewit.backend.post.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -23,9 +24,11 @@ public class CreatePostRequest {
 
     private String body;
 
-    private String mediaUrl;
+//    private String mediaUrl;
+//
+//    private String mediaPublicId;
 
-    private String mediaPublicId;
+    private MultipartFile media;
 
     private String externalUrl;
 }

@@ -19,13 +19,19 @@ public class PostController {
 
     private final PostService postService;
 
-    @PostMapping
+    @PostMapping(
+            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<PostDto> createPost(
             @RequestParam Long authorId,
-            @RequestBody CreatePostRequest request
+            @ModelAttribute CreatePostRequest request
     ) {
+
         return ResponseEntity.ok(
-                postService.createPost(authorId, request)
+                postService.createPost(
+                        authorId,
+                        request
+                )
         );
     }
 
@@ -162,6 +168,77 @@ public class PostController {
                 postService.toggleSavePost(
                         postId,
                         userId
+                )
+        );
+    }
+    @GetMapping("/pending")
+    public ResponseEntity<Page<PostDto>> getPendingPosts(
+            @RequestParam Long subredditId,
+            @RequestParam Long moderatorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
+        return ResponseEntity.ok(
+                postService.getPendingPosts(
+                        subredditId,
+                        moderatorId,
+                        page,
+                        size
+                )
+        );
+    }
+
+    @PatchMapping("/{postId}/approve")
+    public ResponseEntity<PostDto> approvePost(
+            @PathVariable Long postId,
+            @RequestParam Long moderatorId
+    ) {
+
+        return ResponseEntity.ok(
+                postService.approvePost(
+                        postId,
+                        moderatorId
+                )
+        );
+    }
+
+    @PostMapping("/{postId}/follow")
+    public ResponseEntity<Boolean> toggleFollowPost(
+            @PathVariable Long postId,
+            @RequestParam Long userId
+    ) {
+
+        return ResponseEntity.ok(
+                postService.toggleFollowPost(
+                        postId,
+                        userId
+                )
+        );
+    }
+
+    @GetMapping("/following")
+    public ResponseEntity<List<PostDto>> getFollowedPosts(
+            @RequestParam Long userId
+    ) {
+
+        return ResponseEntity.ok(
+                postService.getFollowedPosts(
+                        userId
+                )
+        );
+    }
+
+    @PatchMapping("/{postId}/reject")
+    public ResponseEntity<PostDto> rejectPost(
+            @PathVariable Long postId,
+            @RequestParam Long moderatorId
+    ) {
+
+        return ResponseEntity.ok(
+                postService.rejectPost(
+                        postId,
+                        moderatorId
                 )
         );
     }
