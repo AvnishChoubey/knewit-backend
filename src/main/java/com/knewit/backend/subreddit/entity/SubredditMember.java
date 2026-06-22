@@ -10,9 +10,16 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "subreddit_members")
 @Getter
 @Setter
+@Table(
+        name = "subreddit_members",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {"user_id", "subreddit_id"}
+                )
+        }
+)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,7 +27,7 @@ public class SubredditMember {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long Id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subreddit_id", nullable = false)
@@ -31,10 +38,10 @@ public class SubredditMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "member_state", nullable = false)
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private MemberStatus memberStatus = MemberStatus.APPROVED;// PENDING, APPROVED, BANNED
+    @Column(name = "member_state", nullable = false)
+    private MemberStatus memberStatus = MemberStatus.PENDING;// PENDING, APPROVED, BANNED
 
     @Column(name = "is_moderator", nullable = false)
     @Builder.Default
@@ -67,5 +74,7 @@ public class SubredditMember {
     @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+
 
 }

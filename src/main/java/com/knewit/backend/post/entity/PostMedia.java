@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "post_media")
 @Getter
@@ -25,8 +24,8 @@ public class PostMedia {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    @Column(name = "media_type", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "media_type", nullable = false)
     private MediaType mediaType; // IMAGE, VIDEO, URL, TEXT
 
     @Column(name = "cloudinary_public_id", nullable = false, length = 255)

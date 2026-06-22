@@ -29,8 +29,9 @@ public class OAuthAccount {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 50)
-    private AuthProvider provider ; // GOOGLE, FACEBOOK
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider; // GOOGLE, FACEBOOK
 
     @Column(name = "provider_user_id", nullable = false, length = 191)
     private String providerUserId;

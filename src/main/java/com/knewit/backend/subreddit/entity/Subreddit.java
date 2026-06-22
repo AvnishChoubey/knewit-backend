@@ -1,6 +1,7 @@
 package com.knewit.backend.subreddit.entity;
 
 import com.knewit.backend.auth.entity.User;
+import com.knewit.backend.common.enums.Topic;
 import com.knewit.backend.subreddit.enums.PostingPolicy;
 import com.knewit.backend.subreddit.enums.Visibility;
 import jakarta.persistence.*;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "subreddits")
@@ -36,21 +38,26 @@ public class Subreddit {
     @JoinColumn(name = "creator_user_id", nullable = false)
     private User creator;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private Visibility visibility = Visibility.PUBLIC; // PUBLIC, PRIVATE
+    private Visibility visibility = Visibility.PUBLIC;
 
-    @Column(name = "posting_policy", nullable = false)
-    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private PostingPolicy postingPolicy = PostingPolicy.OPEN; // OPEN, RESTRICTED
+    @Enumerated(EnumType.STRING)
+    @Column(name = "posting_policy", nullable = false)
+    private PostingPolicy postingPolicy = PostingPolicy.OPEN;// OPEN, RESTRICTED
 
     @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;
 
     @Column(name = "icon_public_id")
     private String iconPublicId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Topic topic = Topic.OTHER;
 
     @Column(name = "member_count", nullable = false)
     @Builder.Default

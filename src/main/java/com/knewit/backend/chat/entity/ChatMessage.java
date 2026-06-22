@@ -33,7 +33,8 @@ public class ChatMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "message_type", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "message_type", nullable = false)
     private MessageType messageType; // TEXT, SYSTEM, MEDIA
 
     @Column(name = "attachment_url", columnDefinition = "TEXT")
