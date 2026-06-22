@@ -37,11 +37,11 @@ public class PostMedia {
     @Column(name = "byte_size", nullable = false)
     private Long byteSize;
 
-    @Column(name = "duration_seconds")
-    private Integer durationSeconds;
+//    @Column(name = "duration_seconds")
+//    private Integer durationSeconds;
 
-    private Integer width;
-    private Integer height;
+ //   private Integer width;
+//    private Integer height;
 
     @Column(name = "created_at", nullable = false)
     @CreationTimestamp
