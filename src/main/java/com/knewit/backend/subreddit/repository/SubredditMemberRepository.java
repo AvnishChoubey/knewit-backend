@@ -22,12 +22,17 @@ public interface SubredditMemberRepository
             Long userId
     );
 
-
     boolean existsBySubreddit_IdAndUser_IdAndMemberStatus(
             Long subredditId,
             Long userId,
             MemberStatus memberStatus
     );
+
+    boolean existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+            Long subredditId,
+            Long userId
+    );
+
 
     Optional<SubredditMember> findBySubreddit_IdAndUser_Username(
             Long subredditId,
