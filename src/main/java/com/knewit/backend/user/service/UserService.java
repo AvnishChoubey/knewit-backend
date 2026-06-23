@@ -224,7 +224,7 @@ public class UserService {
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Follower user not found", HttpStatus.NOT_FOUND));
 
         List<UserFollow> userFollows = userFollowRepository.findAllByFollowerId(follower.getId());
-        List<PostFollow> postFollows = postFollowRepository.findAllByFollowerId(follower.getId());
+        List<PostFollow> postFollows = postFollowRepository.findAllByFollower_Id(follower.getId());
         List<CommentFollow> commentFollows = commentFollowRepository.findAllByFollowerId(follower.getId());
 
         Map<String, List<?>> response = new HashMap<>();
@@ -282,7 +282,7 @@ public class UserService {
                 throw new KnewitException("CANNOT_FOLLOW", "Post owner has already blocked you", HttpStatus.BAD_REQUEST);
             }
 
-            Optional<PostFollow> optionalPostFollow = postFollowRepository.findByFollowerIdAndFollowedId(follower.getId(), followed.getId());
+            Optional<PostFollow> optionalPostFollow = postFollowRepository.findByFollower_IdAndFollowed_Id(follower.getId(), followed.getId());
 
             if(optionalPostFollow.isPresent()) {
                 throw new KnewitException("ALREADY_FOLLOWING", "You are already following", HttpStatus.BAD_REQUEST);
@@ -353,7 +353,7 @@ public class UserService {
         } else if(entity.equalsIgnoreCase("POST")) {
             Post followed = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Followed post not found", HttpStatus.NOT_FOUND));
 
-            postFollowRepository.deleteByFollowerIdAndFollowedId(follower.getId(), followed.getId());
+            postFollowRepository.deleteByFollower_IdAndFollowed_Id(follower.getId(), followed.getId());
         } else if(entity.equalsIgnoreCase("COMMENT")) {
             Comment followed = commentRepository.findById(entityId).orElseThrow(() -> new KnewitException("COMMET_NOT_FOUND", "Followed comment not found", HttpStatus.NOT_FOUND));
 

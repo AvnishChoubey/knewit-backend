@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.knewit.backend.common.dto.MediaUploadResponse;
 import com.knewit.backend.common.exception.KnewitException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,10 +14,10 @@ import java.io.File;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class MediaService {
 
-    private final Cloudinary cloudinary;
+    @Autowired private
+    Cloudinary cloudinary;
 
     public MediaUploadResponse uploadFile(
             MultipartFile file,

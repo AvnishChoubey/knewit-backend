@@ -732,7 +732,7 @@ public class PostService {
     ) {
 
         return postFollowRepository
-                .findAllByFollowerId(userId)
+                .findAllByFollower_Id(userId)
                 .stream()
                 .map(PostFollow::getFollowed)
                 .map(post ->
@@ -766,7 +766,7 @@ public class PostService {
 
         Optional<PostFollow> existingFollow =
                 postFollowRepository
-                        .findByFollowerIdAndFollowedId(userId, postId);
+                        .findByFollower_IdAndFollowed_Id(userId, postId);
 
         if (existingFollow.isPresent()) {
 
@@ -799,7 +799,7 @@ public class PostService {
 
             followed =
                     postFollowRepository
-                            .existsByFollwerIdAndFollwedId(viewerId, post.getId());
+                            .existsByFollower_IdAndFollowed_Id(viewerId, post.getId());
         }
 
         boolean saved = false;

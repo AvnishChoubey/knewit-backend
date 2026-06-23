@@ -6,6 +6,7 @@ import com.knewit.backend.post.dto.UpdatePostRequest;
 import com.knewit.backend.post.dto.VotePostRequest;
 import com.knewit.backend.post.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PostController {
 
-    private final PostService postService;
+    @Autowired
+    private  PostService postService;
 
     @PostMapping(
             consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE

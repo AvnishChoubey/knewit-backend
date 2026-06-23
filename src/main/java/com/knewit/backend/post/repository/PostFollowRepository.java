@@ -10,10 +10,10 @@ import java.util.Optional;
 @Repository
 public interface PostFollowRepository extends JpaRepository<PostFollow, Long> {
 
-    Optional<PostFollow> findByFollowerIdAndFollowedId(Long userId, Long postId);
+    Optional<PostFollow> findByFollower_IdAndFollowed_Id(Long userId, Long postId);
 
-    boolean existsByFollwerIdAndFollwedId(Long userId, Long postId);
+    boolean existsByFollower_IdAndFollowed_Id(Long userId, Long postId);
 
-    List<PostFollow> findAllByFollowerId(Long userId);
-    void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
+    List<PostFollow> findAllByFollower_Id(Long userId);
+    void deleteByFollower_IdAndFollowed_Id(Long followerId, Long followedId);
 }
