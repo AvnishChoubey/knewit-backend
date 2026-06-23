@@ -564,10 +564,7 @@ public class PostService {
                         new RuntimeException("User not found"));
 
         PostSave existingSave = postSaveRepository
-                .findByPost_IdAndUser_Id(
-                        postId,
-                        userId
-                )
+                .findBySaverIdAndSavedId(userId, postId)
                 .orElse(null);
 
         if (existingSave != null) {
@@ -578,8 +575,8 @@ public class PostService {
         }
 
         PostSave save = PostSave.builder()
-                .post(post)
-                .user(user)
+                .saved(post)
+                .saver(user)
                 .build();
 
         postSaveRepository.save(save);
@@ -622,7 +619,7 @@ public class PostService {
                 .stream()
                 .map(save ->
                         convertToDto(
-                                save.getPost(),
+                                save.getSaved(),
                                 userId
                         ))
                 .toList();
@@ -735,9 +732,9 @@ public class PostService {
     ) {
 
         return postFollowRepository
-                .findByFollowerId(userId)
+                .findAllByFollowerId(userId)
                 .stream()
-                .map(PostFollow::getPost)
+                .map(PostFollow::getFollowed)
                 .map(post ->
                         convertToDto(
                                 post,
@@ -769,10 +766,7 @@ public class PostService {
 
         Optional<PostFollow> existingFollow =
                 postFollowRepository
-                        .findByPost_IdAndUser_Id(
-                                postId,
-                                userId
-                        );
+                        .findByFollowerIdAndFollowedId(userId, postId);
 
         if (existingFollow.isPresent()) {
 
@@ -785,8 +779,8 @@ public class PostService {
 
         PostFollow follower =
                 PostFollow.builder()
-                        .post(post)
-                        .user(user)
+                        .followed(post)
+                        .follower(user)
                         .build();
 
         postFollowRepository.save(follower);
@@ -805,20 +799,14 @@ public class PostService {
 
             followed =
                     postFollowRepository
-                            .existsByPost_IdAndUser_Id(
-                                    post.getId(),
-                                    viewerId
-                            );
+                            .existsByFollwerIdAndFollwedId(viewerId, post.getId());
         }
 
         boolean saved = false;
 
         if (viewerId != null) {
             saved = postSaveRepository
-                    .existsByPost_IdAndUser_Id(
-                            post.getId(),
-                            viewerId
-                    );
+                    .existsBySaverIdAndSavedId(viewerId, post.getId());
         }
 
         String votedState = "NONE";
