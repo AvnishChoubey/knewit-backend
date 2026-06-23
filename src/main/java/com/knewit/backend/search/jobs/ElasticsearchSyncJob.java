@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -32,17 +33,15 @@ public class ElasticsearchSyncJob {
                 try {
                     searchService.processSyncEvent(event);
                     event.setStatus("PROCESSED");
-                    event.setProcessedAt(Instant.now());
-                    event.setUpdatedAt(Instant.now());
+                    event.setProcessedAt(LocalDateTime.now());
                     outboxRepository.save(event);
                 } catch (Exception e) {
                     log.error("Failed to process sync event: {}", event.getId(), e);
                     event.setAttemptCount(event.getAttemptCount() + 1);
-                    event.setUpdatedAt(Instant.now());
                     if (event.getAttemptCount() >= 5) {
                         event.setStatus("FAILED");
                     } else {
-                        event.setNextAttemptAt(Instant.now().plusSeconds(60L * event.getAttemptCount()));
+                        event.setNextAttemptAt(LocalDateTime.now().plusSeconds(60L * event.getAttemptCount()));
                     }
                     outboxRepository.save(event);
                 }

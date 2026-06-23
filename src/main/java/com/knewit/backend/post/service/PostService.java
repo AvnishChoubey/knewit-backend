@@ -45,7 +45,7 @@ public class PostService {
     private final SubredditRepository subredditRepository;
     private final UserRepository userRepository;
     private final SubredditMemberRepository subredditMemberRepository;
-    private final PostFollowerRepository postFollowerRepository;
+    private final PostFollowRepository postFollowRepository;
 
     @Transactional
     public PostDto createPost(
@@ -564,10 +564,7 @@ public class PostService {
                         new RuntimeException("User not found"));
 
         PostSave existingSave = postSaveRepository
-                .findByPost_IdAndUser_Id(
-                        postId,
-                        userId
-                )
+                .findBySaver_IdAndSaved_Id(userId, postId)
                 .orElse(null);
 
         if (existingSave != null) {
@@ -578,8 +575,8 @@ public class PostService {
         }
 
         PostSave save = PostSave.builder()
-                .post(post)
-                .user(user)
+                .saved(post)
+                .saver(user)
                 .build();
 
         postSaveRepository.save(save);
@@ -618,11 +615,11 @@ public class PostService {
     public List<PostDto> getSavedPosts(Long userId) {
 
         return postSaveRepository
-                .findByUser_Id(userId)
+                .findBySaver_Id(userId)
                 .stream()
                 .map(save ->
                         convertToDto(
-                                save.getPost(),
+                                save.getSaved(),
                                 userId
                         ))
                 .toList();
@@ -734,10 +731,10 @@ public class PostService {
             Long userId
     ) {
 
-        return postFollowerRepository
-                .findByUser_Id(userId)
+        return postFollowRepository
+                .findAllByFollower_Id(userId)
                 .stream()
-                .map(PostFollower::getPost)
+                .map(PostFollow::getFollowed)
                 .map(post ->
                         convertToDto(
                                 post,
@@ -767,29 +764,26 @@ public class PostService {
                                 "User not found"
                         ));
 
-        Optional<PostFollower> existingFollow =
-                postFollowerRepository
-                        .findByPost_IdAndUser_Id(
-                                postId,
-                                userId
-                        );
+        Optional<PostFollow> existingFollow =
+                postFollowRepository
+                        .findByFollower_IdAndFollowed_Id(userId, postId);
 
         if (existingFollow.isPresent()) {
 
-            postFollowerRepository.delete(
+            postFollowRepository.delete(
                     existingFollow.get()
             );
 
             return false;
         }
 
-        PostFollower follower =
-                PostFollower.builder()
-                        .post(post)
-                        .user(user)
+        PostFollow follower =
+                PostFollow.builder()
+                        .followed(post)
+                        .follower(user)
                         .build();
 
-        postFollowerRepository.save(follower);
+        postFollowRepository.save(follower);
 
         return true;
     }
@@ -804,21 +798,15 @@ public class PostService {
         if (viewerId != null) {
 
             followed =
-                    postFollowerRepository
-                            .existsByPost_IdAndUser_Id(
-                                    post.getId(),
-                                    viewerId
-                            );
+                    postFollowRepository
+                            .existsByFollower_IdAndFollowed_Id(viewerId, post.getId());
         }
 
         boolean saved = false;
 
         if (viewerId != null) {
             saved = postSaveRepository
-                    .existsByPost_IdAndUser_Id(
-                            post.getId(),
-                            viewerId
-                    );
+                    .existsBySaver_IdAndSaved_Id(viewerId, post.getId());
         }
 
         String votedState = "NONE";

@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -205,7 +204,7 @@ public class SearchService {
     }
 
     @Transactional
-    public void enqueueSyncEvent(String entityType, UUID entityId, String operation, Object payload) {
+    public void enqueueSyncEvent(String entityType, Long entityId, String operation, Object payload) {
         try {
             String jsonPayload = objectMapper.writeValueAsString(payload);
             SearchIndexSyncEvent event = SearchIndexSyncEvent.builder()
@@ -215,8 +214,6 @@ public class SearchService {
                     .operation(operation)
                     .payload(jsonPayload)
                     .status("PENDING")
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
                     .build();
             outboxRepository.save(event);
         } catch (Exception e) {

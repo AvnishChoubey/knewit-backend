@@ -8,9 +8,17 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_follows")
-@Getter
-@Setter
+@Table(name = "user_follows",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {
+                                "follower_user_id",
+                                "followed_user_id"
+                        }
+                )
+        }
+)
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
