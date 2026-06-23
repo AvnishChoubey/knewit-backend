@@ -20,4 +20,5 @@ public class ChatMessageDto {
     private MessageType messageType;
     private String attachmentUrl;
     private String sentAt;
+    private String editedAt;
 }

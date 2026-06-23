@@ -2,14 +2,13 @@ package com.knewit.backend.chat.controller;
 
 import com.knewit.backend.chat.dto.*;
 import com.knewit.backend.chat.service.ChatService;
-//import com.knewit.backend.config.JwtConfig;
 //import io.jsonwebtoken.Jwts;
 //import io.jsonwebtoken.security.Keys;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -36,9 +35,11 @@ public class ChatController {
     public ResponseEntity<ChatMessageDto> sendMessage(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long chatId,
-            @RequestParam String body) {
+            @Valid @RequestBody SendMessageDto dto) {
         Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(chatService.sendMessage(userId, chatId, body));
+        ChatMessageDto response = chatService.sendMessage(userId, chatId, dto.getBody());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
@@ -53,7 +54,9 @@ public class ChatController {
             @RequestHeader("Authorization") String authHeader,
             @RequestBody CreateDirectConversationDto dto) {
         Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(chatService.createDirectConversation(userId, dto.getTargetUserId()));
+        ConversationDto response = chatService.createDirectConversation(userId, dto.getTargetUserId());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/group")
@@ -61,7 +64,8 @@ public class ChatController {
             @RequestHeader("Authorization") String authHeader,
             @RequestBody CreateGroupConversationDto dto) {
         Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(chatService.createGroupConversation(userId, dto));
+        ConversationDto response = chatService.createGroupConversation(userId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{chatId}/read")
@@ -120,6 +124,7 @@ public class ChatController {
 //                .parseClaimsJws(token)
 //                .getBody()
 //                .getSubject();
-//        return Long.fromString(userIdStr);
+////      return Long.fromString(userIdStr);
+//        return Long.valueOf(userIdStr);
 //    }
 }

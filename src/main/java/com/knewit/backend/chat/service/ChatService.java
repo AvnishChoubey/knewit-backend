@@ -63,6 +63,7 @@ public class ChatService {
                                         .messageType(message.getMessageType())
                                         .attachmentUrl(message.getAttachmentUrl())
                                         .sentAt(message.getSentAt().toString())
+                                        .editedAt(message.getEditedAt() == null ? null : message.getEditedAt().toString())
                                         .build())
                         .toList();
 
@@ -370,6 +371,7 @@ public class ChatService {
                         .messageType(message.getMessageType())
                         .attachmentUrl(message.getAttachmentUrl())
                         .sentAt(message.getSentAt().toString())
+                        .editedAt(message.getEditedAt() == null ? null : message.getEditedAt().toString())
                         .build();
         messagingTemplate.convertAndSend("/topic/chat/" + message.getConversation().getId() + "/edit", dto);
 
@@ -419,6 +421,14 @@ public class ChatService {
         if (conversation.getConversationType() != ConversationType.GROUP) {
             throw new KnewitException("INVALID_CONVERSATION", "Participants can only be added to groups",
                                 HttpStatus.BAD_REQUEST);
+        }
+
+        ChatParticipant creatorParticipant = participantRepository.findByConversationIdAndUserId(conversationId, currentUserId)
+                        .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
+                                HttpStatus.FORBIDDEN));
+
+        if (creatorParticipant.getLeftAt() != null) {
+            throw new KnewitException("LEFT_GROUP", "You have left this group", HttpStatus.BAD_REQUEST);
         }
 
         if (!conversation.getCreatedBy().getId().equals(currentUserId)) {
