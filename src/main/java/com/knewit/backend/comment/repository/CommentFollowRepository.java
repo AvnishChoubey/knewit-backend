@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface CommentFollowRepository extends JpaRepository<CommentFollow, Long> {
-    List<CommentFollow> findAllByFollowerId(Long userId);
-    Optional<CommentFollow> findByFollowerIdAndFollowedId(Long followerId, Long followedId);
-    void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
+    List<CommentFollow> findAllByFollower_Id(Long userId);
+    Optional<CommentFollow> findByFollower_IdAndFollowed_Id(Long followerId, Long followedId);
+    void deleteByFollower_IdAndFollowed_Id(Long followerId, Long followedId);
 }

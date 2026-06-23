@@ -10,8 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserBlockRepository extends JpaRepository<UserBlock, Long> {
-    boolean existsByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
-    void deleteByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
-    List<UserBlock> findAllByBlockerId(Long blockerId);
+    boolean existsByBlocker_IdAndBlocked_Id(Long blockerId, Long blockedId);
+    void deleteByBlocker_IdAndBlocked_Id(Long blockerId, Long blockedId);
+    List<UserBlock> findAllByBlocker_Id(Long blockerId);
     Optional<UserBlock> findByBlockerAndBlocked(User blocker, User blocked);
 }

@@ -11,11 +11,11 @@ import java.util.Optional;
 @Repository
 public interface CommentSaveRepository extends JpaRepository<CommentSave, Long> {
 
-    Optional<CommentSave> findBySaverIdAndSavedId(Long userId, Long commentId);
+    Optional<CommentSave> findBySaver_IdAndSaved_Id(Long userId, Long commentId);
 
-    boolean existsBySaverIdAndSavedId(Long userId, Long commentId);
+    boolean existsBySaver_IdAndSaved_Id(Long userId, Long commentId);
 
     List<CommentSave> findAllBySaver(User user);
 
-    void deleteBySaverIdAndSavedId(Long userId, Long commentId);
+    void deleteBySaver_IdAndSaved_Id(Long userId, Long commentId);
 }

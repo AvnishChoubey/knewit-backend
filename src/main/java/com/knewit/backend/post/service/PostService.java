@@ -564,7 +564,7 @@ public class PostService {
                         new RuntimeException("User not found"));
 
         PostSave existingSave = postSaveRepository
-                .findBySaverIdAndSavedId(userId, postId)
+                .findBySaver_IdAndSaved_Id(userId, postId)
                 .orElse(null);
 
         if (existingSave != null) {
@@ -615,7 +615,7 @@ public class PostService {
     public List<PostDto> getSavedPosts(Long userId) {
 
         return postSaveRepository
-                .findBySaverId(userId)
+                .findBySaver_Id(userId)
                 .stream()
                 .map(save ->
                         convertToDto(
@@ -806,7 +806,7 @@ public class PostService {
 
         if (viewerId != null) {
             saved = postSaveRepository
-                    .existsBySaverIdAndSavedId(viewerId, post.getId());
+                    .existsBySaver_IdAndSaved_Id(viewerId, post.getId());
         }
 
         String votedState = "NONE";

@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface PostBlockRepository extends JpaRepository<PostBlock, Long> {
-    void deleteByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
+    void deleteByBlocker_IdAndBlocked_Id(Long blockerId, Long blockedId);
 
     Optional<PostBlock> findByBlockerAndBlocked(User blocker, Post blocked);
 

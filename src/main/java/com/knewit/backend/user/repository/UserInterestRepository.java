@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface UserInterestRepository extends JpaRepository<UserInterest, Long> {
-    List<UserInterest> findAllByUserId(Long userId);
-    void deleteAllByUserId(Long userId);
+    List<UserInterest> findAllByUser_Id(Long userId);
+    void deleteAllByUser_Id(Long userId);
 }

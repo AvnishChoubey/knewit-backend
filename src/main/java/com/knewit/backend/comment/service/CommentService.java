@@ -45,7 +45,7 @@ public class CommentService {
 
         if (viewerId != null) {
 
-            saved = commentSaveRepository.existsBySaverIdAndSavedId(viewerId, comment.getId());
+            saved = commentSaveRepository.existsBySaver_IdAndSaved_Id(viewerId, comment.getId());
 
             CommentVote vote = commentVoteRepository.findByComment_IdAndUser_Id(comment.getId(), viewerId).orElse(null);
 
@@ -191,7 +191,7 @@ public class CommentService {
         User user = userRepository.findById(userId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CommentSave existingSave = commentSaveRepository.findBySaverIdAndSavedId(userId, commentId).orElse(null);
+        CommentSave existingSave = commentSaveRepository.findBySaver_IdAndSaved_Id(userId, commentId).orElse(null);
 
         if (existingSave != null) {
             commentSaveRepository.delete(existingSave);
