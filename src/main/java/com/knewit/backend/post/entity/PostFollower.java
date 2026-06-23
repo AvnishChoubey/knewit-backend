@@ -5,14 +5,13 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(
-        name = "post_saves",
+        name = "post_followers",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_post_save_post_user",
                         columnNames = {
                                 "post_id",
                                 "user_id"
@@ -25,21 +24,26 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostSave {
+public class PostFollower {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(
+            name = "post_id",
+            nullable = false
+    )
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false
+    )
     private User user;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

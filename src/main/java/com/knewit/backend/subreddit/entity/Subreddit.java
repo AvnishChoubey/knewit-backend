@@ -63,6 +63,12 @@ public class Subreddit {
     @Builder.Default
     private Long memberCount = 0L;
 
+    @Column(columnDefinition = "TEXT")
+    private String bannerUrl;
+
+    @Column
+    private String bannerPublicId;
+
     @Column(name = "post_count", nullable = false)
     @Builder.Default
     private Long postCount = 0L;
@@ -82,4 +88,5 @@ public class Subreddit {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }
