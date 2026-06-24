@@ -1,9 +1,17 @@
 package com.knewit.backend.subreddit.service;
 
+import com.knewit.backend.auth.dto.CustomUserDetails;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.auth.repository.UserRepository;
 import com.knewit.backend.common.dto.MediaUploadResponse;
 import com.knewit.backend.common.enums.Topic;
+import com.knewit.backend.common.exception.KnewitException;
+import com.knewit.backend.post.dto.PostDto;
+import com.knewit.backend.post.entity.Post;
+import com.knewit.backend.post.entity.PostMedia;
+import com.knewit.backend.post.entity.PostVote;
+import com.knewit.backend.post.enums.PostStatus;
+import com.knewit.backend.post.repository.*;
 import com.knewit.backend.subreddit.dto.*;
 import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.entity.SubredditMember;
@@ -13,6 +21,12 @@ import com.knewit.backend.subreddit.enums.Visibility;
 import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.knewit.backend.subreddit.entity.SubredditJoinRequest;
@@ -30,14 +44,25 @@ import java.util.List;
 @Transactional
 public class SubredditService {
     private final SubredditRepository subredditRepository;
+    @Autowired private PostRepository postRepository;
     private final SubredditMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final SubredditJoinRequestRepository joinRequestRepository;
     private final SubredditMemberRepository subredditMemberRepository;
     private final MediaService mediaService;
+    @Autowired private PostFollowRepository postFollowRepository;
+    @Autowired private PostSaveRepository postSaveRepository;
+    @Autowired private PostVoteRepository postVoteRepository;
+    @Autowired private PostMediaRepository postMediaRepository;
 
 
-    public SubredditDto createSubreddit(Long creatorId, CreateSubredditRequest request) {
+    public SubredditDto createSubreddit(CustomUserDetails customUserDetails, CreateSubredditRequest request) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long creatorId = customUserDetails.getUserId();
 
         User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -91,9 +116,7 @@ public class SubredditService {
     }
 
     @Transactional(readOnly = true)
-    public List<SubredditMemberDto> getModerators(
-            Long subredditId
-    ) {
+    public List<SubredditMemberDto> getModerators(Long subredditId) {
 
         return memberRepository
                 .findBySubreddit_IdAndIsModeratorTrue(
@@ -104,9 +127,7 @@ public class SubredditService {
                 .toList();
     }
 
-    private SubredditMemberDto convertMemberDto(
-            SubredditMember member
-    ) {
+    private SubredditMemberDto convertMemberDto(SubredditMember member) {
 
         return SubredditMemberDto.builder()
                 .userId(
@@ -130,10 +151,13 @@ public class SubredditService {
     }
 
     @Transactional
-    public SubredditDto makePublic(
-            Long subredditId,
-            Long moderatorId
-    ) {
+    public SubredditDto makePublic(Long subredditId, CustomUserDetails customUserDetails) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository
                 .findById(subredditId)
@@ -162,78 +186,53 @@ public class SubredditService {
         return convertToDto(subreddit);
     }
 
-    @Transactional
-    public void leaveSubreddit(
-            Long subredditId,
-            Long userId
-    ) {
+    @Transactional(readOnly = true)
+    public Page<PostDto> getPendingPosts(Long subredditId, CustomUserDetails customUserDetails, int page, int size) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
 
-        Subreddit subreddit = subredditRepository
-                .findById(subredditId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Subreddit not found"
-                        ));
+        Long moderatorId = customUserDetails.getUserId();
 
-        SubredditMember membership =
+        boolean isModerator =
                 subredditMemberRepository
-                        .findBySubreddit_IdAndUser_Id(
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
                                 subredditId,
-                                userId
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "User is not a member of this subreddit"
-                                ));
+                                moderatorId
+                        );
 
-        if (subreddit.getCreator()
-                .getId()
-                .equals(userId)) {
-
+        if (!isModerator) {
             throw new RuntimeException(
-                    "Subreddit creator cannot leave the subreddit"
+                    "Only moderators can view pending posts"
             );
         }
 
-        if (Boolean.TRUE.equals(
-                membership.getIsModerator()
-        )) {
-
-            long moderatorCount =
-                    subredditMemberRepository
-                            .countBySubreddit_IdAndIsModeratorTrue(
-                                    subredditId
-                            );
-
-            if (moderatorCount <= 1) {
-
-                throw new RuntimeException(
-                        "Last moderator cannot leave the subreddit"
-                );
-            }
-        }
-
-        subredditMemberRepository.delete(
-                membership
-        );
-
-        subreddit.setMemberCount(
-                Math.max(
-                        0,
-                        subreddit.getMemberCount() - 1
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                        Sort.Direction.DESC,
+                        "createdAt"
                 )
         );
 
-        subredditRepository.save(
-                subreddit
-        );
+        return postRepository
+                .findBySubreddit_IdAndPostStatus(
+                        subredditId,
+                        PostStatus.PENDING_APPROVAL,
+                        pageable
+                )
+                .map(post -> convertPostToPostDto(post, moderatorId));
     }
 
+
     @Transactional(readOnly = true)
-    public List<JoinRequestDto> getPendingJoinRequests(
-            Long subredditId,
-            Long moderatorId
-    ) {
+    public List<JoinRequestDto> getPendingJoinRequests(Long subredditId, CustomUserDetails customUserDetails) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         boolean isModerator =
                 subredditMemberRepository
@@ -274,10 +273,13 @@ public class SubredditService {
     }
 
     @Transactional
-    public SubredditDto makePrivate(
-            Long subredditId,
-            Long moderatorId
-    ) {
+    public SubredditDto makePrivate(Long subredditId, CustomUserDetails customUserDetails) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository
                 .findById(subredditId)
@@ -306,8 +308,6 @@ public class SubredditService {
         return convertToDto(subreddit);
     }
 
-
-
     @Transactional(readOnly = true)
     public SubredditDto getSubreddit(String subredditName) {
 
@@ -327,10 +327,7 @@ public class SubredditService {
     }
 
 
-    private void validateModerator(
-            Long subredditId,
-            Long moderatorId
-    ) {
+    private void validateModerator(Long subredditId, Long moderatorId) {
 
         boolean isModerator =
                 memberRepository
@@ -348,15 +345,14 @@ public class SubredditService {
     }
 
     @Transactional
-    public void banMember(
-            Long subredditId,
-            BanMemberRequest request
-    ) {
+    public void banMember(CustomUserDetails customUserDetails, Long subredditId, BanMemberRequest request) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
 
-        validateModerator(
-                subredditId,
-                request.getModeratorId()
-        );
+        Long moderatorId = customUserDetails.getUserId();
+
+        validateModerator(subredditId, moderatorId);
 
         Subreddit subreddit = subredditRepository
                 .findById(subredditId)
@@ -404,11 +400,7 @@ public class SubredditService {
             );
         }
 
-        User moderator = userRepository
-                .findById(
-                        request.getModeratorId()
-                )
-                .orElseThrow();
+        User moderator = userRepository.findById(moderatorId).orElseThrow();
 
         member.setMemberStatus(
                 MemberStatus.BANNED
@@ -439,10 +431,13 @@ public class SubredditService {
     }
 
     @Transactional(readOnly = true)
-    public List<SubredditMemberDto> getMembers(
-            Long subredditId,
-            Long moderatorId
-    ) {
+    public List<SubredditMemberDto> getMembers(Long subredditId, CustomUserDetails customUserDetails) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         validateModerator(
                 subredditId,
@@ -478,19 +473,17 @@ public class SubredditService {
                 .toList();
     }
 
-
-
-
-
     @Transactional
-    public void unbanMember(
-            Long subredditId,
-            UnbanMemberRequest request
-    ) {
+    public void unbanMember(CustomUserDetails customUserDetails, Long subredditId, UnbanMemberRequest request) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         validateModerator(
                 subredditId,
-                request.getModeratorId()
+                moderatorId
         );
 
         SubredditMember member =
@@ -536,10 +529,12 @@ public class SubredditService {
     }
 
     @Transactional
-    public JoinSubredditResponse join(Long userId,
-                                      Long subredditId) {
+    public JoinSubredditResponse join(CustomUserDetails customUserDetails, Long subredditId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
 
-
+        Long userId = customUserDetails.getUserId();
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -604,9 +599,12 @@ public class SubredditService {
     }
 
     @Transactional
-    public void approveMembership(Long moderatorId,
-                                  String subredditName,
-                                  Long targetUserId) {
+    public void approveMembership(CustomUserDetails customUserDetails, String subredditName, Long targetUserId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository.findByName(subredditName)
                 .orElseThrow(() -> new RuntimeException("Subreddit not found"));
@@ -644,9 +642,13 @@ public class SubredditService {
     }
 
     @Transactional
-    public void rejectMembership(Long moderatorId,
-                                 String subredditName,
-                                 Long targetUserId) {
+    public void rejectMembership(CustomUserDetails customUserDetails, String subredditName, Long targetUserId) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository.findByName(subredditName)
                 .orElseThrow(() -> new RuntimeException("Subreddit not found"));
@@ -673,9 +675,12 @@ public class SubredditService {
     }
 
     @Transactional
-    public void addModerator(Long creatorId,
-                             String subredditName,
-                             Long targetUserId) {
+    public void addModerator(CustomUserDetails customUserDetails, String subredditName, Long targetUserId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long creatorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository.findByName(subredditName)
                 .orElseThrow(() -> new RuntimeException("Subreddit not found"));
@@ -702,11 +707,12 @@ public class SubredditService {
 
 
     @Transactional
-    public SubredditDto updateSubreddit(
-            Long subredditId,
-            Long moderatorId,
-            UpdateSubredditRequest request
-    ) {
+    public SubredditDto updateSubreddit(Long subredditId, CustomUserDetails customUserDetails, UpdateSubredditRequest request) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         validateModerator(
                 subredditId,
@@ -754,9 +760,13 @@ public class SubredditService {
     }
 
     @Transactional
-    public void removeModerator(Long creatorId,
-                                String subredditName,
-                                Long targetUserId) {
+    public void removeModerator(CustomUserDetails customUserDetails, String subredditName, Long targetUserId) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long creatorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository.findByName(subredditName)
                 .orElseThrow(() -> new RuntimeException("Subreddit not found"));
@@ -778,11 +788,12 @@ public class SubredditService {
     }
 
     @Transactional
-    public void uploadIcon(
-            Long subredditId,
-            Long moderatorId,
-            MultipartFile file
-    ) {
+    public void uploadIcon(Long subredditId, CustomUserDetails customUserDetails, MultipartFile file) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         validateModerator(
                 subredditId,
@@ -817,11 +828,12 @@ public class SubredditService {
 
 
     @Transactional
-    public void uploadBanner(
-            Long subredditId,
-            Long moderatorId,
-            MultipartFile file
-    ) {
+    public void uploadBanner(Long subredditId, CustomUserDetails customUserDetails, MultipartFile file) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         validateModerator(
                 subredditId,
@@ -856,10 +868,12 @@ public class SubredditService {
 
 
     @Transactional(readOnly = true)
-    public List<SubredditMemberDto> getBannedMembers(
-            Long subredditId,
-            Long moderatorId
-    ) {
+    public List<SubredditMemberDto> getBannedMembers(Long subredditId, CustomUserDetails customUserDetails) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
 
         validateModerator(
                 subredditId,
@@ -878,7 +892,6 @@ public class SubredditService {
 
     @Transactional(readOnly = true)
     public List<SubredditDto> getSubredditsByTopic(String topic) {
-
         return subredditRepository
                 .findByTopic(Topic.valueOf(topic.toUpperCase()))
                 .stream()
@@ -903,6 +916,167 @@ public class SubredditService {
                 .postCount(subreddit.getPostCount())
                 .isArchived(subreddit.getIsArchived())
                 .createdAt(subreddit.getCreatedAt().toString())
+                .build();
+    }
+
+    // incomplete logic
+    @Transactional
+    public PostDto approvePost(CustomUserDetails customUserDetails, Long subredditId, Long postId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
+
+        validateModerator(
+                subredditId,
+                moderatorId
+        );
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (post.getPostStatus() != PostStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("Post is not pending approval");
+        }
+
+        boolean isModerator =
+                subredditMemberRepository
+                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
+                                post.getSubreddit().getId(),
+                                moderatorId
+                        );
+
+        if (!isModerator) {
+            throw new RuntimeException(
+                    "Only moderators can approve posts"
+            );
+        }
+
+        post.setPostStatus(
+                PostStatus.PUBLISHED
+        );
+
+        postRepository.save(post);
+
+        Subreddit subreddit = post.getSubreddit();
+
+        subreddit.setPostCount(
+                subreddit.getPostCount() + 1
+        );
+
+        subredditRepository.save(subreddit);
+
+        return convertPostToPostDto(post, moderatorId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostDto> getPostsBySubreddit(String subredditName, CustomUserDetails customUserDetails, int page, int size) {
+        Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
+
+        Subreddit subreddit = subredditRepository.findByName(subredditName)
+                .orElseThrow(() -> new RuntimeException("Subreddit not found"));
+
+        if (subreddit.getVisibility() == Visibility.PRIVATE) {
+
+            boolean isApprovedMember = subredditMemberRepository.existsBySubreddit_IdAndUser_IdAndMemberStatus(subreddit.getId(), viewerId, MemberStatus.APPROVED);
+
+            if (!isApprovedMember) {
+                throw new RuntimeException("This is a private subreddit");
+            }
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return postRepository.findBySubreddit_NameAndPostStatus(subredditName, PostStatus.PUBLISHED, pageable)
+                .map(post -> convertPostToPostDto(post, viewerId));
+    }
+
+    // incomplete logic
+    @Transactional
+    public PostDto rejectPost(Long postId, CustomUserDetails customUserDetails, Long subredditId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long moderatorId = customUserDetails.getUserId();
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (post.getPostStatus() != PostStatus.PENDING_APPROVAL) {
+            throw new RuntimeException(
+                    "Post is not pending approval"
+            );
+        }
+
+        validateModerator(subredditId, moderatorId);
+
+        post.setPostStatus(PostStatus.REMOVED);
+
+        postRepository.save(post);
+
+        return convertPostToPostDto(post, moderatorId);
+    }
+
+    private PostDto convertPostToPostDto(Post post, Long viewerId) {
+
+        boolean followed = false;
+
+        if (viewerId != null) {
+            followed = postFollowRepository.existsByFollower_IdAndFollowed_Id(viewerId, post.getId());
+        }
+
+        boolean saved = false;
+
+        if (viewerId != null) {
+            saved = postSaveRepository.existsBySaver_IdAndSaved_Id(viewerId, post.getId());
+        }
+
+        String votedState = "NONE";
+
+        PostVote vote = postVoteRepository.findByPost_IdAndUser_Id(post.getId(), viewerId).orElse(null);
+
+        if (vote != null) {
+            votedState = vote.getVoteType().name();
+        }
+
+        PostMedia media = postMediaRepository.findAllByPost_Id(post.getId())
+                .stream()
+                .findFirst()
+                .orElse(null);
+
+        return PostDto.builder()
+                .id(post.getId())
+                .subredditName(post.getSubreddit().getName())
+                .authorUsername(post.getAuthor().getUsername())
+                .title(post.getTitle())
+                .type(post.getType().name())
+                .body(post.getBody())
+                .externalUrl(post.getExternalUrl())
+                .mediaUrl(
+                        media != null
+                                ? media.getCloudinaryUrl()
+                                : null
+                )
+                .mediaPublicId(
+                        media != null
+                                ? media.getCloudinaryPublicId()
+                                : null
+                )
+                .postStatus(post.getPostStatus().name())
+                .upvoteCount(post.getUpvoteCount())
+                .downvoteCount(post.getDownvoteCount())
+                .shareCount(post.getShareCount())
+                .commentCount(post.getCommentCount())
+                .scoreHot(post.getScoreHot())
+                .scoreBest(post.getScoreBest())
+                .scoreRising(post.getScoreRising())
+                .scoreTop(post.getScoreTop())
+                .createdAt(post.getCreatedAt().toString())
+                .votedState(votedState)
+                .saved(saved)
+                .followed(followed)
                 .build();
     }
 }

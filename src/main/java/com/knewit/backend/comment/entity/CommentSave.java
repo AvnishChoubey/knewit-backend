@@ -8,11 +8,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "comment_saves",
+@Table(name = "comment_saves",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_comment_save_comment_user",
                         columnNames = {
                                 "comment_id",
                                 "user_id"
@@ -32,20 +30,13 @@ public class CommentSave {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "comment_id",
-            nullable = false
-    )
-    private Comment comment;
+    @JoinColumn(name = "comment_id", nullable = false)
+    private Comment saved;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "user_id",
-            nullable = false
-    )
-    private User user;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User saver;
 
     @CreationTimestamp
-    @Column(nullable = false)
     private LocalDateTime createdAt;
 }

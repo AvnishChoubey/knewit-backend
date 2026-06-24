@@ -7,11 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface CommentVoteRepository
-        extends JpaRepository<CommentVote, Long> {
-
-    Optional<CommentVote> findByComment_IdAndUser_Id(
-            Long commentId,
-            Long userId
-    );
+public interface CommentVoteRepository extends JpaRepository<CommentVote, Long> {
+    Optional<CommentVote> findByComment_IdAndUser_Id(Long commentId, Long userId);
 }

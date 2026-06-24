@@ -1,49 +1,43 @@
-package com.knewit.backend.post.entity;
+package com.knewit.backend.comment.entity;
 
 import com.knewit.backend.auth.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "post_followers",
+@Table(name = "comment_blockers",
         uniqueConstraints = {
                 @UniqueConstraint(
                         columnNames = {
-                                "post_id",
+                                "comment_id",
                                 "user_id"
                         }
                 )
         }
 )
-@Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostFollower {
-
+@Data
+public class CommentBlock {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "post_id",
-            nullable = false
-    )
-    private Post post;
+    @JoinColumn(name = "comment_id", nullable = false)
+    private Comment blocked;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "user_id",
-            nullable = false
-    )
-    private User user;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User blocker;
 
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 }

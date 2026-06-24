@@ -8,7 +8,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_blocks")
+@Table(name = "user_blocks",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {
+                                "blocker_user_id",
+                                "blocked_user_id"
+                        }
+                )
+        }
+)
 @Getter
 @Setter
 @Builder

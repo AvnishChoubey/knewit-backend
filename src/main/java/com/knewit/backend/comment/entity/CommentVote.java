@@ -15,11 +15,9 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(
-        name = "comment_votes",
+@Table(name = "comment_votes",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_comment_vote_comment_user",
                         columnNames = {
                                 "comment_id",
                                 "user_id"
