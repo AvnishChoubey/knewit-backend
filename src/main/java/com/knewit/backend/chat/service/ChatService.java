@@ -308,7 +308,7 @@ public class ChatService {
     }
 
     @Transactional
-    public void markAsRead(Long userId, Long conversationId, Long lastMessageId) {
+    public String markAsRead(Long userId, Long conversationId, Long lastMessageId) {
         ChatParticipant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
@@ -328,10 +328,10 @@ public class ChatService {
         }
 
         participant.setLastReadMessageId(message);
-
         participant.setUnreadCount(0);
-
         participantRepository.save(participant);
+
+        return "Messages marked as read successfully";
     }
 
     @Transactional
@@ -379,7 +379,7 @@ public class ChatService {
     }
 
     @Transactional
-    public void deleteMessage(Long userId, Long messageId) {
+    public String deleteMessage(Long userId, Long messageId) {
         ChatMessage message = messageRepository.findById(messageId)
                         .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found",
                                         HttpStatus.NOT_FOUND));
@@ -410,10 +410,11 @@ public class ChatService {
                         .build();
 
         messagingTemplate.convertAndSend("/topic/chat/" + message.getConversation().getId() + "/delete", dto);
+        return "Message deleted successfully";
     }
 
     @Transactional
-    public void addParticipant(Long currentUserId, Long conversationId, Long participantUserId) {
+    public String addParticipant(Long currentUserId, Long conversationId, Long participantUserId) {
         ChatConversation conversation = conversationRepository.findById(conversationId)
                         .orElseThrow(() -> new KnewitException("CHAT_NOT_FOUND", "Conversation not found",
                                 HttpStatus.NOT_FOUND));
@@ -436,13 +437,13 @@ public class ChatService {
                                 HttpStatus.FORBIDDEN);
         }
 
-        User participantUser = userRepository.findById(participantUserId)
-                        .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
-
         if (participantRepository.findByConversationIdAndUserId(conversationId, participantUserId).isPresent()) {
             throw new KnewitException("USER_ALREADY_EXISTS", "User already belongs to this group",
                     HttpStatus.BAD_REQUEST);
         }
+
+        User participantUser = userRepository.findById(participantUserId)
+                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
         ChatParticipant participant = ChatParticipant.builder()
                         .conversation(conversation)
@@ -475,12 +476,12 @@ public class ChatService {
                         .sentAt(now.toString())
                         .build();
 
-        messagingTemplate.convertAndSend("/topic/chat/" + conversationId, dto
-        );
+        messagingTemplate.convertAndSend("/topic/chat/" + conversationId, dto);
+        return "Participant Added Successfully";
     }
 
     @Transactional
-    public void leaveGroup(Long userId, Long conversationId) {
+    public String leaveGroup(Long userId, Long conversationId) {
         ChatConversation conversation = conversationRepository.findById(conversationId)
                         .orElseThrow(() -> new KnewitException("CHAT_NOT_FOUND", "Conversation not found",
                                         HttpStatus.NOT_FOUND));
@@ -528,6 +529,7 @@ public class ChatService {
                         .build();
 
         messagingTemplate.convertAndSend("/topic/chat/" + conversationId, dto);
+        return "You have left the group successfully";
     }
 
 }

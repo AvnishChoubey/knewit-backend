@@ -2,16 +2,13 @@ package com.knewit.backend.chat.controller;
 
 import com.knewit.backend.chat.dto.*;
 import com.knewit.backend.chat.service.ChatService;
-//import io.jsonwebtoken.Jwts;
-//import io.jsonwebtoken.security.Keys;
+import com.knewit.backend.auth.dto.CustomUserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
-
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.List;
 
 @RestController
@@ -20,111 +17,96 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
-//    private final JwtConfig jwtConfig;
 
     @GetMapping("/{chatId}")
     public ResponseEntity<List<ChatMessageDto>> getMessages(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long chatId, @RequestParam(defaultValue = "0")
-            int page, @RequestParam(defaultValue = "50") int size) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(chatService.getMessages(userId, chatId, page, size));
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+
+        return ResponseEntity.ok(chatService.getMessages(customUserDetails.getUserId(), chatId, page, size));
     }
 
     @PostMapping("/{chatId}/messages")
     public ResponseEntity<ChatMessageDto> sendMessage(
-            @RequestHeader("Authorization") String authHeader,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatId,
             @Valid @RequestBody SendMessageDto dto) {
-        Long userId = getUserIdFromToken(authHeader);
-        ChatMessageDto response = chatService.sendMessage(userId, chatId, dto.getBody());
 
+        ChatMessageDto response = chatService.sendMessage(customUserDetails.getUserId(), chatId, dto.getBody());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
     public ResponseEntity<List<ConversationDto>> getConversations(
-            @RequestHeader("Authorization") String authHeader) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(chatService.getUserConversations(userId));
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        return ResponseEntity.ok(chatService.getUserConversations(customUserDetails.getUserId()));
     }
 
     @PostMapping("/direct")
     public ResponseEntity<ConversationDto> createDirectConversation(
-            @RequestHeader("Authorization") String authHeader,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody CreateDirectConversationDto dto) {
-        Long userId = getUserIdFromToken(authHeader);
-        ConversationDto response = chatService.createDirectConversation(userId, dto.getTargetUserId());
 
+        ConversationDto response = chatService.createDirectConversation(customUserDetails.getUserId(), dto.getTargetUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/group")
     public ResponseEntity<ConversationDto> createGroupConversation(
-            @RequestHeader("Authorization") String authHeader,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody CreateGroupConversationDto dto) {
-        Long userId = getUserIdFromToken(authHeader);
-        ConversationDto response = chatService.createGroupConversation(userId, dto);
+
+        ConversationDto response = chatService.createGroupConversation(customUserDetails.getUserId(), dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{chatId}/read")
-    public ResponseEntity<Void> markAsRead(
-            @RequestHeader("Authorization") String authHeader,
+    public ResponseEntity<String> markAsRead(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatId,
             @RequestBody MarkAsReadDto dto) {
-        Long userId = getUserIdFromToken(authHeader);
-        chatService.markAsRead(userId, chatId, dto.getLastMessageId());
-        return ResponseEntity.ok().build();
+
+        String response = chatService.markAsRead(customUserDetails.getUserId(), chatId, dto.getLastMessageId());
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/messages/{messageId}")
     public ResponseEntity<ChatMessageDto> editMessage(
-            @RequestHeader("Authorization") String authHeader,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long messageId,
             @RequestBody EditMessageDto dto) {
-        Long userId = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(chatService.editMessage(userId, messageId, dto.getBody()));
+
+        return ResponseEntity.ok(chatService.editMessage(customUserDetails.getUserId(), messageId, dto.getBody()));
     }
 
     @DeleteMapping("/messages/{messageId}")
-    public ResponseEntity<Void> deleteMessage(
-            @RequestHeader("Authorization") String authHeader,
+    public ResponseEntity<String> deleteMessage(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long messageId) {
-        Long userId = getUserIdFromToken(authHeader);
-        chatService.deleteMessage(userId, messageId);
-        return ResponseEntity.ok().build();
+
+        String response = chatService.deleteMessage(customUserDetails.getUserId(), messageId);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{chatId}/participants")
-    public ResponseEntity<Void> addParticipant(
-            @RequestHeader("Authorization") String authHeader,
+    public ResponseEntity<String> addParticipant(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatId,
             @RequestBody AddParticipantDto dto) {
-        Long userId = getUserIdFromToken(authHeader);
-        chatService.addParticipant(userId, chatId, dto.getUserId());
-        return ResponseEntity.ok().build();
+
+        String response = chatService.addParticipant(customUserDetails.getUserId(), chatId, dto.getUserId());
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{chatId}/leave")
-    public ResponseEntity<Void> leaveGroup(
-            @RequestHeader("Authorization") String authHeader,
+    public ResponseEntity<String> leaveGroup(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatId) {
-        Long userId = getUserIdFromToken(authHeader);
-        chatService.leaveGroup(userId, chatId);
-        return ResponseEntity.ok().build();
-    }
 
-//    private Long getUserIdFromToken(String authHeader) {
-//        String token = authHeader.replace("Bearer ", "");
-//        Key key = Keys.hmacShaKeyFor(jwtConfig.getSigningSecret().getBytes(StandardCharsets.UTF_8));
-//        String userIdStr = Jwts.parserBuilder()
-//                .setSigningKey(key)
-//                .build()
-//                .parseClaimsJws(token)
-//                .getBody()
-//                .getSubject();
-////      return Long.fromString(userIdStr);
-//        return Long.valueOf(userIdStr);
-//    }
+        String response = chatService.leaveGroup(customUserDetails.getUserId(), chatId);
+        return ResponseEntity.ok(response);
+    }
 }
