@@ -10,7 +10,16 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "post_votes")
+@Table(name = "post_votes",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {
+                                "post_id",
+                                "user_id"
+                        }
+                )
+        }
+)
 @Getter
 @Setter
 @Builder

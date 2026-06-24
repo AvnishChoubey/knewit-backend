@@ -8,7 +8,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "post_saves")
+@Table(name = "post_saves",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {
+                                "post_id",
+                                "user_id"
+                        }
+                )
+        }
+)
 @Getter
 @Setter
 @Builder
@@ -22,13 +31,13 @@ public class PostSave {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+    private Post saved;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User saver;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

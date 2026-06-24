@@ -2,8 +2,10 @@ package com.knewit.backend.search.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -39,14 +41,16 @@ public class SearchIndexSyncEvent {
     private Integer attemptCount = 0;
 
     @Column(name = "next_attempt_at")
-    private Instant nextAttemptAt;
+    private LocalDateTime nextAttemptAt;
 
     @Column(name = "processed_at")
-    private Instant processedAt;
+    private LocalDateTime processedAt;
 
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -215,8 +214,6 @@ public class SearchService {
                     .operation(operation)
                     .payload(jsonPayload)
                     .status("PENDING")
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
                     .build();
             outboxRepository.save(event);
         } catch (Exception e) {

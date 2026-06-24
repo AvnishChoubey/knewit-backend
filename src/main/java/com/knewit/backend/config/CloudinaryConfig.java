@@ -5,30 +5,26 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
 public class CloudinaryConfig {
-
     @Value("${cloudinary.cloud-name}")
-    private String cloudName;
+    private String cloudinaryCloudName;
 
     @Value("${cloudinary.api-key}")
-    private String apiKey;
+    private String cloudinaryApiKey;
 
     @Value("${cloudinary.api-secret}")
-    private String apiSecret;
+    private String cloudinaryApiSecret;
 
     @Bean
     public Cloudinary cloudinary() {
 
-        Map<String, String> config = new HashMap<>();
-
-        config.put("cloud_name", cloudName);
-        config.put("api_key", apiKey);
-        config.put("api_secret", apiSecret);
-
-        return new Cloudinary(config);
+        return new Cloudinary(
+                Map.of("cloud_name", cloudinaryCloudName,
+                        "api_key", cloudinaryApiKey,
+                        "api_secret", cloudinaryApiSecret)
+        );
     }
 }
