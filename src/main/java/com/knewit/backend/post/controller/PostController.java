@@ -1,5 +1,6 @@
 package com.knewit.backend.post.controller;
 
+import com.knewit.backend.auth.dto.CustomUserDetails;
 import com.knewit.backend.post.dto.CreatePostRequest;
 import com.knewit.backend.post.dto.PostDto;
 import com.knewit.backend.post.dto.UpdatePostRequest;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,17 +23,13 @@ public class PostController {
     @Autowired
     private  PostService postService;
 
-    @PostMapping(
-            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResponseEntity<PostDto> createPost(
-            @RequestParam Long authorId,
-            @ModelAttribute CreatePostRequest request
-    ) {
+    @PostMapping(name = "/create",
+            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PostDto> createPost(@AuthenticationPrincipal CustomUserDetails customUserDetails, @ModelAttribute CreatePostRequest request) {
 
         return ResponseEntity.ok(
                 postService.createPost(
-                        authorId,
+                        customUserDetails,
                         request
                 )
         );
@@ -40,14 +38,14 @@ public class PostController {
     @PutMapping("/{postId}")
     public ResponseEntity<PostDto> updatePost(
             @PathVariable Long postId,
-            @RequestParam Long authorId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody UpdatePostRequest request
     ) {
 
         return ResponseEntity.ok(
                 postService.updatePost(
                         postId,
-                        authorId,
+                        customUserDetails,
                         request
                 )
         );
@@ -56,12 +54,12 @@ public class PostController {
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long postId,
-            @RequestParam Long authorId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
         postService.deletePost(
                 postId,
-                authorId
+                customUserDetails
         );
 
         return ResponseEntity.ok().build();
@@ -70,14 +68,14 @@ public class PostController {
     @PostMapping("/{postId}/vote")
     public ResponseEntity<PostDto> votePost(
             @PathVariable Long postId,
-            @RequestParam Long userId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody VotePostRequest request
     ) {
 
         return ResponseEntity.ok(
                 postService.votePost(
                         postId,
-                        userId,
+                        customUserDetails,
                         request
                 )
         );
@@ -101,165 +99,19 @@ public class PostController {
         );
     }
 
-    @GetMapping("/saved")
-    public ResponseEntity<List<PostDto>> getSavedPosts(
-            @RequestParam Long userId
-    ) {
-
-        return ResponseEntity.ok(
-                postService.getSavedPosts(userId)
-        );
-    }
-
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<PostDto>> getUserPosts(
-            @PathVariable Long userId,
-            @RequestParam Long viewerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-
-        return ResponseEntity.ok(
-                postService.getUserPosts(
-                        userId,
-                        viewerId,
-                        page,
-                        size
-                )
-        );
-    }
-
     @GetMapping("/search")
-    public ResponseEntity<Page<PostDto>> searchPosts(
-            @RequestParam String keyword,
-            @RequestParam Long viewerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-
-        return ResponseEntity.ok(
-                postService.searchPosts(
-                        keyword,
-                        viewerId,
-                        page,
-                        size
-                )
-        );
+    public ResponseEntity<Page<PostDto>> searchPosts(@RequestParam String keyword,
+                                                     @AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(postService.searchPosts(keyword, customUserDetails, page, size));
     }
-
-
 
     @GetMapping("/{postId}")
     public ResponseEntity<PostDto> getPost(
             @PathVariable Long postId,
-            @RequestParam Long viewerId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
-        return ResponseEntity.ok(
-                postService.getPost(postId, viewerId)
-        );
-    }
-
-
-    @PostMapping("/{postId}/save")
-    public ResponseEntity<Boolean> toggleSavePost(
-            @PathVariable Long postId,
-            @RequestParam Long userId
-    ) {
-
-        return ResponseEntity.ok(
-                postService.toggleSavePost(
-                        postId,
-                        userId
-                )
-        );
-    }
-    @GetMapping("/pending")
-    public ResponseEntity<Page<PostDto>> getPendingPosts(
-            @RequestParam Long subredditId,
-            @RequestParam Long moderatorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-
-        return ResponseEntity.ok(
-                postService.getPendingPosts(
-                        subredditId,
-                        moderatorId,
-                        page,
-                        size
-                )
-        );
-    }
-
-    @PatchMapping("/{postId}/approve")
-    public ResponseEntity<PostDto> approvePost(
-            @PathVariable Long postId,
-            @RequestParam Long moderatorId
-    ) {
-
-        return ResponseEntity.ok(
-                postService.approvePost(
-                        postId,
-                        moderatorId
-                )
-        );
-    }
-
-    @PostMapping("/{postId}/follow")
-    public ResponseEntity<Boolean> toggleFollowPost(
-            @PathVariable Long postId,
-            @RequestParam Long userId
-    ) {
-
-        return ResponseEntity.ok(
-                postService.toggleFollowPost(
-                        postId,
-                        userId
-                )
-        );
-    }
-
-    @GetMapping("/following")
-    public ResponseEntity<List<PostDto>> getFollowedPosts(
-            @RequestParam Long userId
-    ) {
-
-        return ResponseEntity.ok(
-                postService.getFollowedPosts(
-                        userId
-                )
-        );
-    }
-
-    @PatchMapping("/{postId}/reject")
-    public ResponseEntity<PostDto> rejectPost(
-            @PathVariable Long postId,
-            @RequestParam Long moderatorId
-    ) {
-
-        return ResponseEntity.ok(
-                postService.rejectPost(
-                        postId,
-                        moderatorId
-                )
-        );
-    }
-
-    @GetMapping("/subreddit/{subredditName}")
-    public ResponseEntity<Page<PostDto>> getPostsBySubreddit(
-            @PathVariable String subredditName,
-            @RequestParam Long viewerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-
-        return ResponseEntity.ok(
-                postService.getPostsBySubreddit(
-                        subredditName,
-                        viewerId,
-                        page,
-                        size
-                )
-        );
+        return ResponseEntity.ok(postService.getPost(customUserDetails, postId));
     }
 }

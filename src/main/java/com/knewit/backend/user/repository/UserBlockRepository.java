@@ -13,5 +13,5 @@ public interface UserBlockRepository extends JpaRepository<UserBlock, Long> {
     boolean existsByBlocker_IdAndBlocked_Id(Long blockerId, Long blockedId);
     void deleteByBlocker_IdAndBlocked_Id(Long blockerId, Long blockedId);
     List<UserBlock> findAllByBlocker_Id(Long blockerId);
-    Optional<UserBlock> findByBlockerAndBlocked(User blocker, User blocked);
+    Optional<UserBlock> findByBlocker_IdAndBlocked_Id(Long blockerId, Long blockedId);
 }

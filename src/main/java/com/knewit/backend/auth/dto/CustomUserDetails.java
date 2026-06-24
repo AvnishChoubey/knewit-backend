@@ -12,12 +12,12 @@ public class CustomUserDetails implements UserDetails {
     private final Long userId;
     private final String email;
     private final String password;
-    private final boolean isProfileCompleted;
+//    private final boolean isProfileCompleted;
     private final List<GrantedAuthority> authorities;
 
     public CustomUserDetails(User user) {
         this.userId = user.getId();
-        this.isProfileCompleted = (user.getProfileCompletedAt() != null);
+//        this.isProfileCompleted = (user.getProfileCompletedAt() != null);
         this.email = user.getEmail();
         this.password = user.getPassword();
 
@@ -63,8 +63,8 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-
-    public boolean isProfileCompleted() {
-        return this.isProfileCompleted;
-    }
+//
+//    public boolean isProfileCompleted() {
+//        return this.isProfileCompleted;
+//    }
 }

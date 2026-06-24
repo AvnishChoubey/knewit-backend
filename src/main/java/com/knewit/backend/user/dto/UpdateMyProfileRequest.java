@@ -13,7 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateMyProfileRequest {
-    private String displayName;
     private String bio;
     private List<Topic> interests;
     private String avatarUrl;

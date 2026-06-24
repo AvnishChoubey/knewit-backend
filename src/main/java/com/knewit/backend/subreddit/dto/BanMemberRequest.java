@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class BanMemberRequest {
 
-    private Long moderatorId;
+//    private Long moderatorId;
 
     private String username;
 

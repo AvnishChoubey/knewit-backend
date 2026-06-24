@@ -7,8 +7,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
-import lombok.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -19,8 +19,8 @@ import java.io.IOException;
 
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
-    @Value("${frontend-url}")
-    private String frontendUrl;
+    @Value("${auth-url}")
+    private String authUrl;
 
     @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
@@ -46,10 +46,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         response.addCookie(cookie);
 
         if(user.getProfileCompletedAt() == null) {
-            response.sendRedirect(frontendUrl + user.getId() + "/complete-profile");
+            response.sendRedirect(authUrl + "/complete-profile");
         } else {
-            // change
-            response.sendRedirect(frontendUrl + user.getId() + "/dashboard");
+            response.sendRedirect( "http://localhost:8080/api/v1/feed");
         }
     }
 }

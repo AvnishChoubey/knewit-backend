@@ -3,6 +3,7 @@ package com.knewit.backend.auth.service;
 import com.knewit.backend.auth.dto.*;
 import com.knewit.backend.auth.entity.*;
 import com.knewit.backend.auth.enums.AuthProvider;
+import com.knewit.backend.auth.enums.Role;
 import com.knewit.backend.auth.enums.UserStatus;
 import com.knewit.backend.auth.repository.*;
 import com.knewit.backend.common.dto.MediaUploadResponse;
@@ -21,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -44,7 +46,7 @@ public class AuthService {
 
     @Transactional
     public EmailSignUpResponse signup(EmailSignUpRequest request) {
-
+        System.out.println("REQUEST CAME IN AUTH SERVICE SIGNUP");
         if(!request.getPassword().equals(request.getConfirmPassword())) {
             throw new KnewitException("DIFFERENT_PASSWORDS", "Passwords do not match", HttpStatus.BAD_REQUEST);
         }
@@ -58,6 +60,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .status(UserStatus.ACTIVE)
                 .provider(AuthProvider.LOCAL)
+                .role(Role.USER)
                 .isPrivateProfile(false)
                 .build();
 
@@ -149,7 +152,7 @@ public class AuthService {
     }
 
     @Transactional
-    public ProfileCompletionResponse completeProfile(Long userId, ProfileCompletionRequest request) {
+    public ProfileCompletionResponse completeProfile(Long userId, ProfileCompletionRequest request, MultipartFile file) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
@@ -164,8 +167,8 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setBio(request.getBio());
 
-        if(request.getAvatar() != null) {
-            MediaUploadResponse mediaUploadResponse = mediaService.uploadFile(request.getAvatar());
+        if(file != null) {
+            MediaUploadResponse mediaUploadResponse = mediaService.uploadFile(file, "/knewit/users/avatars");
             user.setAvatarUrl(mediaUploadResponse.getUrl());
             user.setAvatarPublicId(mediaUploadResponse.getPublicId());
         }

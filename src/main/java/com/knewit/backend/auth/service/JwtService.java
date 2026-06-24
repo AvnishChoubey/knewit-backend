@@ -27,16 +27,16 @@ public class JwtService {
     private final Set<String> blacklist = ConcurrentHashMap.newKeySet();
 
     private SecretKey getSignInKey() {
-        log.info("JWT SERVICE GET SIGNIN KEY METHOD CALLED");
+        System.out.println("JWT SERVICE GET SIGNIN KEY METHOD CALLED");
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        log.info("KEYBYTES ARRAY = " + keyBytes);
+        System.out.println("KEYBYTES ARRAY = " + keyBytes);
         SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes);
-        log.info("SECRET KEY GENERATED = " + secretKey);
+        System.out.println("SECRET KEY GENERATED = " + secretKey);
         return secretKey;
     }
 
     public String generateToken(Long userId, String email, boolean isProfileCompleted) {
-        log.info("GENERATING AUTHENTICATION TOKEN");
+        System.out.println("GENERATING AUTHENTICATION TOKEN");
         String token = Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
@@ -46,7 +46,7 @@ public class JwtService {
                 .signWith(getSignInKey())
                 .compact();
 
-        log.info("JWT SERVICE TOKEN GENERATED = " + token);
+        System.out.println("JWT SERVICE TOKEN GENERATED = " + token);
         return token;
     }
 

@@ -42,8 +42,8 @@ public class SecurityConfig {
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.getWriter().write("""
-                        {"message":"Logged out successfully"}
-                    """);
+                                    {"message":"Logged out successfully"}
+                            """);
                         })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

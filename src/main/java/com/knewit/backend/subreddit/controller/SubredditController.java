@@ -1,11 +1,15 @@
 package com.knewit.backend.subreddit.controller;
 
+import com.knewit.backend.auth.dto.CustomUserDetails;
+import com.knewit.backend.post.dto.PostDto;
 import com.knewit.backend.subreddit.dto.*;
 import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.service.SubredditService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,7 +26,6 @@ public class SubredditController {
     @GetMapping("/{name}")
     public ResponseEntity<SubredditDto> getSubreddit(
             @PathVariable String name) {
-
         return ResponseEntity.ok(
                 subredditService.getSubreddit(name)
         );
@@ -30,11 +33,12 @@ public class SubredditController {
 
     @PostMapping("/{subredditId}/ban")
     public ResponseEntity<Void> banMember(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long subredditId,
             @RequestBody BanMemberRequest request
     ) {
-
         subredditService.banMember(
+                customUserDetails,
                 subredditId,
                 request
         );
@@ -45,13 +49,13 @@ public class SubredditController {
     @PostMapping("/{subredditId}/icon")
     public ResponseEntity<Void> uploadIcon(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId,
-            @RequestParam MultipartFile file
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestPart MultipartFile file
     ) {
 
         subredditService.uploadIcon(
                 subredditId,
-                moderatorId,
+                customUserDetails,
                 file
         );
 
@@ -63,7 +67,6 @@ public class SubredditController {
     public ResponseEntity<List<SubredditMemberDto>> getModerators(
             @PathVariable Long subredditId
     ) {
-
         return ResponseEntity.ok(
                 subredditService.getModerators(
                         subredditId
@@ -75,40 +78,42 @@ public class SubredditController {
     @GetMapping("/{subredditId}/banned-members")
     public ResponseEntity<List<SubredditMemberDto>> getBannedMembers(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
         return ResponseEntity.ok(
                 subredditService.getBannedMembers(
                         subredditId,
-                        moderatorId
+                        customUserDetails
                 )
         );
     }
 
-    @PostMapping("/{subredditId}/banner")
+    @PatchMapping("/{subredditId}/banner")
     public ResponseEntity<Void> uploadBanner(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId,
-            @RequestParam MultipartFile file
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestPart MultipartFile file
     ) {
 
         subredditService.uploadBanner(
                 subredditId,
-                moderatorId,
+                customUserDetails,
                 file
         );
 
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{subredditId}/unban")
+    @PatchMapping("/{subredditId}/unban")
     public ResponseEntity<Void> unbanMember(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long subredditId,
             @RequestBody UnbanMemberRequest request
     ) {
 
         subredditService.unbanMember(
+                customUserDetails,
                 subredditId,
                 request
         );
@@ -120,14 +125,14 @@ public class SubredditController {
     @PatchMapping("/{subredditId}")
     public ResponseEntity<SubredditDto> updateSubreddit(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody UpdateSubredditRequest request
     ) {
 
         return ResponseEntity.ok(
                 subredditService.updateSubreddit(
                         subredditId,
-                        moderatorId,
+                        customUserDetails,
                         request
                 )
         );
@@ -136,13 +141,13 @@ public class SubredditController {
     @GetMapping("/{subredditId}/members")
     public ResponseEntity<List<SubredditMemberDto>> getMembers(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
         return ResponseEntity.ok(
                 subredditService.getMembers(
                         subredditId,
-                        moderatorId
+                        customUserDetails
                 )
         );
     }
@@ -150,21 +155,21 @@ public class SubredditController {
     @PostMapping("/{subredditId}/join")
     public ResponseEntity<JoinSubredditResponse> joinSubreddit(
             @PathVariable Long subredditId,
-            @RequestParam Long userId) {
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         return ResponseEntity.ok(
-                subredditService.join(userId, subredditId )
+                subredditService.join(customUserDetails, subredditId )
         );
     }
 
-    @PostMapping("/{name}/membership/{userId}/approve")
+    @PatchMapping("/{name}/approve-member")
     public ResponseEntity<Void> approveMembership(
             @PathVariable String name,
             @PathVariable Long userId,
-            @RequestParam Long moderatorId) {
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         subredditService.approveMembership(
-                moderatorId,
+                customUserDetails,
                 name,
                 userId
         );
@@ -172,14 +177,14 @@ public class SubredditController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{name}/membership/{userId}/reject")
+    @PatchMapping("/{name}/reject-member")
     public ResponseEntity<Void> rejectMembership(
             @PathVariable String name,
             @PathVariable Long userId,
-            @RequestParam Long moderatorId) {
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         subredditService.rejectMembership(
-                moderatorId,
+                customUserDetails,
                 name,
                 userId
         );
@@ -187,14 +192,14 @@ public class SubredditController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{name}/moderators/{userId}")
+    @PatchMapping("/{name}/moderators")
     public ResponseEntity<Void> addModerator(
             @PathVariable String name,
-            @PathVariable Long userId,
-            @RequestParam Long creatorId) {
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestParam Long userId) {
 
         subredditService.addModerator(
-                creatorId,
+                customUserDetails,
                 name,
                 userId
         );
@@ -205,13 +210,13 @@ public class SubredditController {
     @PatchMapping("/{subredditId}/private")
     public ResponseEntity<SubredditDto> makePrivate(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
         return ResponseEntity.ok(
                 subredditService.makePrivate(
                         subredditId,
-                        moderatorId
+                        customUserDetails
                 )
         );
     }
@@ -219,25 +224,25 @@ public class SubredditController {
     @PatchMapping("/{subredditId}/public")
     public ResponseEntity<SubredditDto> makePublic(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
         return ResponseEntity.ok(
                 subredditService.makePublic(
                         subredditId,
-                        moderatorId
+                        customUserDetails
                 )
         );
     }
 
-    @DeleteMapping("/{name}/moderators/{userId}")
+    @DeleteMapping("/{name}/moderators")
     public ResponseEntity<Void> removeModerator(
             @PathVariable String name,
             @PathVariable Long userId,
-            @RequestParam Long creatorId) {
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         subredditService.removeModerator(
-                creatorId,
+                customUserDetails,
                 name,
                 userId
         );
@@ -248,39 +253,24 @@ public class SubredditController {
     @GetMapping("/{subredditId}/join-requests")
     public ResponseEntity<List<JoinRequestDto>> getPendingJoinRequests(
             @PathVariable Long subredditId,
-            @RequestParam Long moderatorId
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
         return ResponseEntity.ok(
                 subredditService.getPendingJoinRequests(
                         subredditId,
-                        moderatorId
+                        customUserDetails
                 )
         );
     }
 
-    @DeleteMapping("/{subredditId}/leave")
-    public ResponseEntity<Void> leaveSubreddit(
-            @PathVariable Long subredditId,
-            @RequestParam Long userId
-    ) {
-
-        subredditService.leaveSubreddit(
-                subredditId,
-                userId
-        );
-
-        return ResponseEntity.noContent()
-                .build();
-    }
-
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<SubredditDto> createSubreddit(
-            @RequestParam Long creatorId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @Valid @RequestBody CreateSubredditRequest request) {
 
         return ResponseEntity.ok(
-                subredditService.createSubreddit(creatorId, request)
+                subredditService.createSubreddit(customUserDetails, request)
         );
     }
 
@@ -293,11 +283,44 @@ public class SubredditController {
         );
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<List<SubredditDto>> getAllSubreddits() {
 
         return ResponseEntity.ok(
                 subredditService.getAllSubreddits()
         );
+    }
+
+    @GetMapping("/{subredditId}/pending")
+    public ResponseEntity<Page<PostDto>> getPendingPosts(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                         @PathVariable Long subredditId,
+                                                         @RequestParam(defaultValue = "0") int page,
+                                                         @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(subredditService.getPendingPosts(subredditId, customUserDetails, page, size));
+    }
+
+    @PatchMapping("/{subredditId}/posts/{postId}/approve")
+    public ResponseEntity<PostDto> approvePost(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                               @PathVariable("subredditId") Long subredditId,
+                                               @PathVariable("postId") Long postId
+    ) {
+
+        return ResponseEntity.ok(subredditService.approvePost(customUserDetails, subredditId, postId));
+    }
+
+    @GetMapping("/{subredditName}/posts")
+    public ResponseEntity<Page<PostDto>> getPostsBySubreddit(@PathVariable String subredditName,
+                                                             @AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                             @RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(subredditService.getPostsBySubreddit(subredditName, customUserDetails, page, size));
+    }
+
+    @PatchMapping("/subreddit/{subredditId}/posts/{postId}/reject")
+    public ResponseEntity<PostDto> rejectPost(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                              @PathVariable("subredditId") Long subredditId,
+                                              @PathVariable("postId") Long postId) {
+
+        return ResponseEntity.ok(subredditService.rejectPost(postId, customUserDetails, subredditId));
     }
 }
