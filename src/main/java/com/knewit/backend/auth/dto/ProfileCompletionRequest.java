@@ -1,5 +1,6 @@
 package com.knewit.backend.auth.dto;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ProfileCompletionRequest {
     @NotBlank(message = "Username is required")
+    @Column(nullable = false)
     private String username;
 
     @NotEmpty(message = "At least one interest is required")

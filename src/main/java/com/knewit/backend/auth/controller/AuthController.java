@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,11 +18,9 @@ import java.util.Map;
 public class AuthController {
 
     @Autowired private AuthService authService;
-    @Autowired private JwtService jwtService;
 
     @PostMapping("/signup/email")
     public ResponseEntity<EmailSignUpResponse> signup(@Valid @RequestBody EmailSignUpRequest request) {
-        System.out.println("REQUEST IN AUTH CONTROLLER SIGNUP METHOD");
         return ResponseEntity.ok(authService.signup(request));
     }
 
@@ -48,11 +47,9 @@ public class AuthController {
     }
 
     @PostMapping("/complete-profile")
-    public ResponseEntity<ProfileCompletionResponse> completeProfile(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestPart ProfileCompletionRequest profileCompletionRequest,
-            @RequestPart(required = false) MultipartFile file) {
-        Long userId = jwtService.extractUserId(authHeader);
-        return ResponseEntity.ok(authService.completeProfile(userId, profileCompletionRequest, file));
+    public ResponseEntity<ProfileCompletionResponse> completeProfile(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                                     @RequestPart ProfileCompletionRequest profileCompletionRequest,
+                                                                     @RequestPart(required = false, name = "avatar") MultipartFile file) {
+        return ResponseEntity.ok(authService.completeProfile(customUserDetails, profileCompletionRequest, file));
     }
 }

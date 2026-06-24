@@ -152,7 +152,13 @@ public class AuthService {
     }
 
     @Transactional
-    public ProfileCompletionResponse completeProfile(Long userId, ProfileCompletionRequest request, MultipartFile file) {
+    public ProfileCompletionResponse completeProfile(CustomUserDetails customUserDetails, ProfileCompletionRequest request, MultipartFile file) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long userId = customUserDetails.getUserId();
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
@@ -168,7 +174,9 @@ public class AuthService {
         user.setBio(request.getBio());
 
         if(file != null) {
+            System.out.println("AVATAR UPLOADING START");
             MediaUploadResponse mediaUploadResponse = mediaService.uploadFile(file, "/knewit/users/avatars");
+            System.out.println("AVATAR UPLOADED SUCCESSFULLY");
             user.setAvatarUrl(mediaUploadResponse.getUrl());
             user.setAvatarPublicId(mediaUploadResponse.getPublicId());
         }

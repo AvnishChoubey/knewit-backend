@@ -50,7 +50,7 @@ public class SubredditController {
     public ResponseEntity<Void> uploadIcon(
             @PathVariable Long subredditId,
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @RequestPart MultipartFile file
+            @RequestPart(name = "icon") MultipartFile file
     ) {
 
         subredditService.uploadIcon(
@@ -93,7 +93,7 @@ public class SubredditController {
     public ResponseEntity<Void> uploadBanner(
             @PathVariable Long subredditId,
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @RequestPart MultipartFile file
+            @RequestPart(name = "banner") MultipartFile file
     ) {
 
         subredditService.uploadBanner(
