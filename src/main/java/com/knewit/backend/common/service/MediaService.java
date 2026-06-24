@@ -19,44 +19,27 @@ public class MediaService {
     @Autowired private
     Cloudinary cloudinary;
 
-    public MediaUploadResponse uploadFile(
-            MultipartFile file,
-            String folder
-    ) {
-
+    public MediaUploadResponse uploadFile(MultipartFile file, String folder) {
         try {
-
             String contentType = file.getContentType();
-
             Map<?, ?> result;
 
-            if (contentType != null &&
-                    contentType.startsWith("video")) {
-
-                File tempFile = File.createTempFile(
-                        "video-upload-",
-                        ".tmp"
-                );
+            if (contentType != null && contentType.startsWith("video")) {
+                File tempFile = File.createTempFile("video-upload-", ".tmp");
 
                 file.transferTo(tempFile);
 
                 try {
-
                     result = cloudinary.uploader().uploadLarge(
                             tempFile,
                             ObjectUtils.asMap(
                                     "folder", folder,
                                     "resource_type", "video"
-                            )
-                    );
-
+                            ));
                 } finally {
-
                     tempFile.delete();
                 }
-
             } else {
-
                 result = cloudinary.uploader().upload(
                         file.getBytes(),
                         ObjectUtils.asMap(
@@ -67,23 +50,12 @@ public class MediaService {
             }
 
             return MediaUploadResponse.builder()
-                    .url(
-                            result.get("secure_url")
-                                    .toString()
-                    )
-                    .publicId(
-                            result.get("public_id")
-                                    .toString()
-                    )
+                    .url(result.get("secure_url").toString())
+                    .publicId(result.get("public_id").toString())
                     .build();
 
         } catch (Exception e) {
-
-            throw new KnewitException(
-                    "FILE_UPLOAD_FAILED",
-                    "Failed to upload file",
-                    HttpStatus.SERVICE_UNAVAILABLE
-            );
+            throw new KnewitException("FILE_UPLOAD_FAILED", "Failed to upload file", HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 }

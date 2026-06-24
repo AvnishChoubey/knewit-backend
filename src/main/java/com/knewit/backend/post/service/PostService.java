@@ -1,9 +1,11 @@
 package com.knewit.backend.post.service;
 
+import com.knewit.backend.auth.dto.CustomUserDetails;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.auth.repository.UserRepository;
 import com.knewit.backend.common.dto.MediaUploadResponse;
 import com.knewit.backend.common.enums.VoteType;
+import com.knewit.backend.common.exception.KnewitException;
 import com.knewit.backend.common.service.MediaService;
 import com.knewit.backend.post.dto.CreatePostRequest;
 import com.knewit.backend.post.dto.PostDto;
@@ -25,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.knewit.backend.post.dto.VotePostRequest;
@@ -48,10 +51,13 @@ public class PostService {
     private final PostFollowRepository postFollowRepository;
 
     @Transactional
-    public PostDto createPost(
-            Long authorId,
-            CreatePostRequest request
-    ) {
+    public PostDto createPost(CustomUserDetails customUserDetails, CreatePostRequest request) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long authorId = customUserDetails.getUserId();
 
         Subreddit subreddit = subredditRepository
                 .findByName(request.getSubredditName())
@@ -192,153 +198,13 @@ public class PostService {
     }
 
     @Transactional
-    public PostDto rejectPost(
-            Long postId,
-            Long moderatorId
-    ) {
+    public PostDto updatePost(Long postId, CustomUserDetails customUserDetails, UpdatePostRequest request) {
 
-        Post post = postRepository
-                .findById(postId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Post not found"
-                        ));
-
-        if (post.getPostStatus() != PostStatus.PENDING_APPROVAL) {
-            throw new RuntimeException(
-                    "Post is not pending approval"
-            );
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
-        boolean isModerator =
-                subredditMemberRepository
-                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
-                                post.getSubreddit().getId(),
-                                moderatorId
-                        );
-
-        if (!isModerator) {
-            throw new RuntimeException(
-                    "Only moderators can reject posts"
-            );
-        }
-
-        post.setPostStatus(
-                PostStatus.REMOVED
-        );
-
-        postRepository.save(post);
-
-        return convertToDto(
-                post,
-                moderatorId
-        );
-    }
-
-
-    @Transactional
-    public PostDto approvePost(
-            Long postId,
-            Long moderatorId
-    ) {
-
-        Post post = postRepository
-                .findById(postId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Post not found"
-                        ));
-
-        if (post.getPostStatus() != PostStatus.PENDING_APPROVAL) {
-            throw new RuntimeException(
-                    "Post is not pending approval"
-            );
-        }
-
-        boolean isModerator =
-                subredditMemberRepository
-                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
-                                post.getSubreddit().getId(),
-                                moderatorId
-                        );
-
-        if (!isModerator) {
-            throw new RuntimeException(
-                    "Only moderators can approve posts"
-            );
-        }
-
-        post.setPostStatus(
-                PostStatus.PUBLISHED
-        );
-
-        postRepository.save(post);
-
-        Subreddit subreddit = post.getSubreddit();
-
-        subreddit.setPostCount(
-                subreddit.getPostCount() + 1
-        );
-
-        subredditRepository.save(subreddit);
-
-        return convertToDto(
-                post,
-                moderatorId
-        );
-    }
-
-
-    @Transactional(readOnly = true)
-    public Page<PostDto> getPendingPosts(
-            Long subredditId,
-            Long moderatorId,
-            int page,
-            int size
-    ) {
-
-        boolean isModerator =
-                subredditMemberRepository
-                        .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(
-                                subredditId,
-                                moderatorId
-                        );
-
-        if (!isModerator) {
-            throw new RuntimeException(
-                    "Only moderators can view pending posts"
-            );
-        }
-
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(
-                        Sort.Direction.DESC,
-                        "createdAt"
-                )
-        );
-
-        return postRepository
-                .findBySubreddit_IdAndPostStatus(
-                        subredditId,
-                        PostStatus.PENDING_APPROVAL,
-                        pageable
-                )
-                .map(post -> convertToDto(
-                        post,
-                        moderatorId
-                ));
-    }
-
-
-
-    @Transactional
-    public PostDto updatePost(
-            Long postId,
-            Long authorId,
-            UpdatePostRequest request
-    ) {
+        Long authorId = customUserDetails.getUserId();
 
         Post post = postRepository
                 .findByIdAndAuthor_Id(postId, authorId)
@@ -364,54 +230,10 @@ public class PostService {
         return convertToDto(post, authorId);
     }
 
-
     @Transactional(readOnly = true)
-    public Page<PostDto> getPostsBySubreddit(
-            String subredditName,
-            Long viewerId,
-            int page,
-            int size
-    ) {
+    public PostDto getPost(CustomUserDetails customUserDetails, Long postId) {
 
-        Subreddit subreddit = subredditRepository
-                .findByName(subredditName)
-                .orElseThrow(() ->
-                        new RuntimeException("Subreddit not found"));
-
-        if (subreddit.getVisibility() == Visibility.PRIVATE) {
-
-            boolean isApprovedMember =
-                    subredditMemberRepository
-                            .existsBySubreddit_IdAndUser_IdAndMemberStatus(
-                                    subreddit.getId(),
-                                    viewerId,
-                                    MemberStatus.APPROVED
-                            );
-
-            if (!isApprovedMember) {
-                throw new RuntimeException(
-                        "This is a private subreddit"
-                );
-            }
-        }
-
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
-        return postRepository
-                .findBySubreddit_NameAndPostStatus(
-                        subredditName,
-                        PostStatus.PUBLISHED,
-                        pageable
-                )
-                .map(post -> convertToDto(post, viewerId));
-    }
-
-    @Transactional(readOnly = true)
-    public PostDto getPost(Long postId, Long viewerId) {
+        Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
 
         Post post = postRepository
                 .findByIdAndPostStatus(
@@ -424,13 +246,13 @@ public class PostService {
         return convertToDto(post, viewerId);
     }
 
-
     @Transactional
-    public void deletePost(
-            Long postId,
-            Long authorId
-    ) {
+    public void deletePost(Long postId, CustomUserDetails customUserDetails) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
 
+        Long authorId = customUserDetails.getUserId();
         Post post = postRepository
                 .findByIdAndAuthor_Id(postId, authorId)
                 .orElseThrow(() ->
@@ -443,13 +265,13 @@ public class PostService {
         postRepository.save(post);
     }
 
-
     @Transactional
-    public PostDto votePost(
-            Long postId,
-            Long userId,
-            VotePostRequest request
-    ) {
+    public PostDto votePost(Long postId, CustomUserDetails customUserDetails, VotePostRequest request) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long userId = customUserDetails.getUserId();
 
         Post post = postRepository
                 .findById(postId)
@@ -545,124 +367,18 @@ public class PostService {
         return convertToDto(post, userId);
     }
 
-
-
-    @Transactional
-    public boolean toggleSavePost(
-            Long postId,
-            Long userId
-    ) {
-
-        Post post = postRepository
-                .findById(postId)
-                .orElseThrow(() ->
-                        new RuntimeException("Post not found"));
-
-        User user = userRepository
-                .findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
-
-        PostSave existingSave = postSaveRepository
-                .findBySaver_IdAndSaved_Id(userId, postId)
-                .orElse(null);
-
-        if (existingSave != null) {
-
-            postSaveRepository.delete(existingSave);
-
-            return false;
-        }
-
-        PostSave save = PostSave.builder()
-                .saved(post)
-                .saver(user)
-                .build();
-
-        postSaveRepository.save(save);
-
-        return true;
-    }
-
     @Transactional(readOnly = true)
-    public Page<PostDto> searchPosts(
-            String keyword,
-            Long viewerId,
-            int page,
-            int size
-    ) {
+    public Page<PostDto> searchPosts(String keyword, CustomUserDetails customUserDetails, int page, int size) {
+        Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
 
-        Pageable pageable =
-                PageRequest.of(
-                        page,
-                        size,
-                        Sort.by(
-                                Sort.Direction.DESC,
-                                "createdAt"
-                        )
-                );
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        return postRepository
-                .searchPosts(
-                        keyword,
-                        PostStatus.PUBLISHED,
-                        pageable
-                )
+        return postRepository.searchPosts(keyword, PostStatus.PUBLISHED, pageable)
                 .map(post -> convertToDto(post, viewerId));
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getSavedPosts(Long userId) {
-
-        return postSaveRepository
-                .findBySaver_Id(userId)
-                .stream()
-                .map(save ->
-                        convertToDto(
-                                save.getSaved(),
-                                userId
-                        ))
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<PostDto> getUserPosts(
-            Long authorId,
-            Long viewerId,
-            int page,
-            int size
-    ) {
-
-        Pageable pageable =
-                PageRequest.of(
-                        page,
-                        size,
-                        Sort.by(
-                                Sort.Direction.DESC,
-                                "createdAt"
-                        )
-                );
-
-        return postRepository
-                .findByAuthor_IdAndPostStatus(
-                        authorId,
-                        PostStatus.PUBLISHED,
-                        pageable
-                )
-                .map(post ->
-                        convertToDto(
-                                post,
-                                viewerId
-                        ));
-    }
-
-    @Transactional(readOnly = true)
-    public Page<PostDto> getFeed(
-            Long viewerId,
-            int page,
-            int size,
-            String sort
-    ) {
+    public Page<PostDto> getFeed(Long viewerId, int page, int size, String sort) {
 
         FeedSort feedSort =
                 FeedSort.valueOf(
@@ -726,72 +442,7 @@ public class PostService {
                         ));
     }
 
-    @Transactional(readOnly = true)
-    public List<PostDto> getFollowedPosts(
-            Long userId
-    ) {
-
-        return postFollowRepository
-                .findAllByFollower_Id(userId)
-                .stream()
-                .map(PostFollow::getFollowed)
-                .map(post ->
-                        convertToDto(
-                                post,
-                                userId
-                        )
-                )
-                .toList();
-    }
-
-    @Transactional
-    public Boolean toggleFollowPost(
-            Long postId,
-            Long userId
-    ) {
-
-        Post post = postRepository
-                .findById(postId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Post not found"
-                        ));
-
-        User user = userRepository
-                .findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"
-                        ));
-
-        Optional<PostFollow> existingFollow =
-                postFollowRepository
-                        .findByFollower_IdAndFollowed_Id(userId, postId);
-
-        if (existingFollow.isPresent()) {
-
-            postFollowRepository.delete(
-                    existingFollow.get()
-            );
-
-            return false;
-        }
-
-        PostFollow follower =
-                PostFollow.builder()
-                        .followed(post)
-                        .follower(user)
-                        .build();
-
-        postFollowRepository.save(follower);
-
-        return true;
-    }
-
-    private PostDto convertToDto(
-            Post post,
-            Long viewerId
-    ) {
+    private PostDto convertToDto(Post post, Long viewerId) {
 
         boolean followed = false;
 
@@ -864,9 +515,7 @@ public class PostService {
 
     private void updateScores(Post post) {
 
-        long score =
-                post.getUpvoteCount()
-                        - post.getDownvoteCount();
+        long score = post.getUpvoteCount() - post.getDownvoteCount();
 
         double calculatedScore = (double) score;
 

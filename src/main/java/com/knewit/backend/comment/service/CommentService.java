@@ -1,5 +1,6 @@
 package com.knewit.backend.comment.service;
 
+import com.knewit.backend.auth.dto.CustomUserDetails;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.auth.repository.UserRepository;
 import com.knewit.backend.comment.dto.CommentDto;
@@ -13,9 +14,11 @@ import com.knewit.backend.comment.repository.CommentRepository;
 import com.knewit.backend.comment.repository.CommentSaveRepository;
 import com.knewit.backend.comment.repository.CommentVoteRepository;
 import com.knewit.backend.common.enums.VoteType;
+import com.knewit.backend.common.exception.KnewitException;
 import com.knewit.backend.post.entity.Post;
 import com.knewit.backend.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,7 +79,9 @@ public class CommentService {
     }
 
     @Transactional(readOnly = true)
-    public List<CommentDto> getCommentsForPost(Long postId, Long viewerId) {
+    public List<CommentDto> getCommentsForPost(CustomUserDetails customUserDetails, Long postId) {
+        Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
+
         return commentRepository.findAllByPost_IdAndCommentStatus(postId, CommentStatus.PUBLISHED)
                 .stream()
                 .map(comment -> convertToDto(comment, viewerId))
@@ -84,7 +89,14 @@ public class CommentService {
     }
 
     @Transactional
-    public void voteComment(Long userId, Long commentId, VoteType voteType) {
+    public void voteComment(CustomUserDetails customUserDetails, Long commentId, VoteType voteType) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long userId = customUserDetails.getUserId();
+
         Comment comment = commentRepository
                 .findById(commentId)
                 .orElseThrow(() ->
@@ -183,31 +195,13 @@ public class CommentService {
     }
 
     @Transactional
-    public void toggleSaveComment(Long commentId, Long userId) {
-
-        Comment comment = commentRepository.findById(commentId)
-                        .orElseThrow(() -> new RuntimeException("Comment not found"));
-
-        User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new RuntimeException("User not found"));
-
-        CommentSave existingSave = commentSaveRepository.findBySaver_IdAndSaved_Id(userId, commentId).orElse(null);
-
-        if (existingSave != null) {
-            commentSaveRepository.delete(existingSave);
-            return;
+    public CommentDto updateComment(CustomUserDetails customUserDetails, Long commentId, UpdateCommentRequest request) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
-        CommentSave save = CommentSave.builder()
-                        .saved(comment)
-                        .saver(user)
-                        .build();
+        Long userId = customUserDetails.getUserId();
 
-        commentSaveRepository.save(save);
-    }
-
-    @Transactional
-    public CommentDto updateComment(Long commentId, Long userId, UpdateCommentRequest request) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
@@ -237,7 +231,12 @@ public class CommentService {
     }
 
     @Transactional
-    public void deleteComment(Long commentId, Long userId) {
+    public void deleteComment(CustomUserDetails customUserDetails, Long commentId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long userId = customUserDetails.getUserId();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
@@ -253,7 +252,13 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentDto createComment(Long authorId, Long postId, CreateCommentRequest request) {
+    public CommentDto createComment(CustomUserDetails customUserDetails, Long postId, CreateCommentRequest request) {
+
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long authorId = customUserDetails.getUserId();
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));

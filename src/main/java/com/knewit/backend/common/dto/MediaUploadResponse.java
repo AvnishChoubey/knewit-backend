@@ -1,17 +1,13 @@
 package com.knewit.backend.common.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
-@Builder
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class MediaUploadResponse {
-
     private String url;
-
     private String publicId;
 }
