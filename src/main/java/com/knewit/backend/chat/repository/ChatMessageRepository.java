@@ -6,8 +6,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     Page<ChatMessage> findByConversationIdAndDeletedAtIsNullOrderBySentAtDesc(Long conversationId,
                                                                               Pageable pageable);
+    Optional<ChatMessage> findByIdAndConversationId(Long messageId, Long conversationId);
 }

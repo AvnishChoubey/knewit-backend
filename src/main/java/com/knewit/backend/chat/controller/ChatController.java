@@ -18,14 +18,14 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    @GetMapping("/{chatId}")
+    @GetMapping("/{chatId}/messages")
     public ResponseEntity<List<ChatMessageDto>> getMessages(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
 
-        return ResponseEntity.ok(chatService.getMessages(customUserDetails.getUserId(), chatId, page, size));
+        return ResponseEntity.ok(chatService.getMessages(customUserDetails, chatId, page, size));
     }
 
     @PostMapping("/{chatId}/messages")
@@ -34,15 +34,15 @@ public class ChatController {
             @PathVariable Long chatId,
             @Valid @RequestBody SendMessageDto dto) {
 
-        ChatMessageDto response = chatService.sendMessage(customUserDetails.getUserId(), chatId, dto.getBody());
+        ChatMessageDto response = chatService.sendMessage(customUserDetails, chatId, dto.getBody());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<List<ConversationDto>> getConversations(
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
-        return ResponseEntity.ok(chatService.getUserConversations(customUserDetails.getUserId()));
+        return ResponseEntity.ok(chatService.getUserConversations(customUserDetails));
     }
 
     @PostMapping("/direct")
@@ -50,7 +50,7 @@ public class ChatController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody CreateDirectConversationDto dto) {
 
-        ConversationDto response = chatService.createDirectConversation(customUserDetails.getUserId(), dto.getTargetUserId());
+        ConversationDto response = chatService.createDirectConversation(customUserDetails, dto.getTargetUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -59,7 +59,7 @@ public class ChatController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody CreateGroupConversationDto dto) {
 
-        ConversationDto response = chatService.createGroupConversation(customUserDetails.getUserId(), dto);
+        ConversationDto response = chatService.createGroupConversation(customUserDetails, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -69,25 +69,27 @@ public class ChatController {
             @PathVariable Long chatId,
             @RequestBody MarkAsReadDto dto) {
 
-        String response = chatService.markAsRead(customUserDetails.getUserId(), chatId, dto.getLastMessageId());
+        String response = chatService.markAsRead(customUserDetails, chatId, dto.getLastMessageId());
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/messages/{messageId}")
+    @PutMapping("/{chatId}/messages/{messageId}")
     public ResponseEntity<ChatMessageDto> editMessage(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatId,
             @PathVariable Long messageId,
             @RequestBody EditMessageDto dto) {
 
-        return ResponseEntity.ok(chatService.editMessage(customUserDetails.getUserId(), messageId, dto.getBody()));
+        return ResponseEntity.ok(chatService.editMessage(customUserDetails, chatId, messageId, dto.getBody()));
     }
 
-    @DeleteMapping("/messages/{messageId}")
+    @DeleteMapping("/{chatId}/messages/{messageId}")
     public ResponseEntity<String> deleteMessage(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatId,
             @PathVariable Long messageId) {
 
-        String response = chatService.deleteMessage(customUserDetails.getUserId(), messageId);
+        String response = chatService.deleteMessage(customUserDetails, chatId, messageId);
         return ResponseEntity.ok(response);
     }
 
@@ -97,8 +99,16 @@ public class ChatController {
             @PathVariable Long chatId,
             @RequestBody AddParticipantDto dto) {
 
-        String response = chatService.addParticipant(customUserDetails.getUserId(), chatId, dto.getUserId());
+        String response = chatService.addParticipant(customUserDetails, chatId, dto.getUserId());
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{chatId}/participants")
+    public ResponseEntity<List<ChatParticipantDto>> getAllParticipants(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatId) {
+
+        return ResponseEntity.ok(chatService.getAllParticipants(customUserDetails, chatId));
     }
 
     @DeleteMapping("/{chatId}/leave")
@@ -106,7 +116,7 @@ public class ChatController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatId) {
 
-        String response = chatService.leaveGroup(customUserDetails.getUserId(), chatId);
+        String response = chatService.leaveGroup(customUserDetails, chatId);
         return ResponseEntity.ok(response);
     }
 }

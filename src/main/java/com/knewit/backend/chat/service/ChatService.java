@@ -1,11 +1,9 @@
 package com.knewit.backend.chat.service;
 
+import com.knewit.backend.auth.dto.CustomUserDetails;
 import com.knewit.backend.auth.entity.User;
 import com.knewit.backend.auth.repository.UserRepository;
-import com.knewit.backend.chat.dto.ChatMessageDto;
-import com.knewit.backend.chat.dto.ConversationDto;
-import com.knewit.backend.chat.dto.CreateGroupConversationDto;
-import com.knewit.backend.chat.dto.DeleteMessageDto;
+import com.knewit.backend.chat.dto.*;
 import com.knewit.backend.chat.entity.ChatConversation;
 import com.knewit.backend.chat.entity.ChatMessage;
 import com.knewit.backend.chat.entity.ChatParticipant;
@@ -40,7 +38,12 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional(readOnly = true)
-    public List<ChatMessageDto> getMessages(Long userId, Long conversationId, int page, int size) {
+    public List<ChatMessageDto> getMessages(CustomUserDetails customUserDetails, Long conversationId, int page, int size) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long userId = customUserDetails.getUserId();
+
         ChatParticipant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
@@ -73,7 +76,12 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageDto sendMessage(Long senderId, Long conversationId, String body) {
+    public ChatMessageDto sendMessage(CustomUserDetails customUserDetails, Long conversationId, String body) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long senderId = customUserDetails.getUserId();
+
         if (body == null || body.isBlank()) {
             throw new KnewitException("INVALID_MESSAGE", "Message cannot be empty", HttpStatus.BAD_REQUEST);
         }
@@ -139,7 +147,11 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationDto> getUserConversations(Long userId) {
+    public List<ConversationDto> getUserConversations(CustomUserDetails customUserDetails) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long userId = customUserDetails.getUserId();
 
         List<ChatParticipant> participations = participantRepository.findByUserIdAndLeftAtIsNull(userId);
         return participations.stream()
@@ -183,7 +195,12 @@ public class ChatService {
 
 
     @Transactional
-    public ConversationDto createDirectConversation(Long currentUserId, Long targetUserId) {
+    public ConversationDto createDirectConversation(CustomUserDetails customUserDetails, Long targetUserId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long currentUserId = customUserDetails.getUserId();
+
         if (currentUserId.equals(targetUserId)) {
             throw new KnewitException("INVALID_CHAT", "Cannot create conversation with yourself", HttpStatus.BAD_REQUEST);
         }
@@ -244,7 +261,11 @@ public class ChatService {
     }
 
     @Transactional
-    public ConversationDto createGroupConversation(Long creatorId, CreateGroupConversationDto dto) {
+    public ConversationDto createGroupConversation(CustomUserDetails customUserDetails, CreateGroupConversationDto dto) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long creatorId = customUserDetails.getUserId();
 
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
             throw new KnewitException("INVALID_GROUP_NAME", "Group title cannot be empty", HttpStatus.BAD_REQUEST);
@@ -308,7 +329,12 @@ public class ChatService {
     }
 
     @Transactional
-    public String markAsRead(Long userId, Long conversationId, Long lastMessageId) {
+    public String markAsRead(CustomUserDetails customUserDetails, Long conversationId, Long lastMessageId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long userId = customUserDetails.getUserId();
+
         ChatParticipant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
@@ -335,13 +361,18 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageDto editMessage(Long userId, Long messageId, String newBody) {
+    public ChatMessageDto editMessage(CustomUserDetails customUserDetails, Long conversationId, Long messageId, String newBody) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long userId = customUserDetails.getUserId();
+
         if (newBody == null || newBody.isBlank()) {
             throw new KnewitException("INVALID_MESSAGE", "Message cannot be empty", HttpStatus.BAD_REQUEST);
         }
 
-        ChatMessage message = messageRepository.findById(messageId)
-                        .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found",
+        ChatMessage message = messageRepository.findByIdAndConversationId(messageId, conversationId)
+                .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found in this chat",
                                         HttpStatus.NOT_FOUND));
 
         if (message.getDeletedAt() != null) {
@@ -379,10 +410,15 @@ public class ChatService {
     }
 
     @Transactional
-    public String deleteMessage(Long userId, Long messageId) {
-        ChatMessage message = messageRepository.findById(messageId)
-                        .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found",
-                                        HttpStatus.NOT_FOUND));
+    public String deleteMessage(CustomUserDetails customUserDetails, Long conversationId, Long messageId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long userId = customUserDetails.getUserId();
+
+        ChatMessage message = messageRepository.findByIdAndConversationId(messageId, conversationId)
+                .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found in this chat",
+                                                        HttpStatus.NOT_FOUND));
 
         if (message.getDeletedAt() != null) {
             throw new KnewitException("MESSAGE_ALREADY_DELETED", "Message already deleted", HttpStatus.BAD_REQUEST);
@@ -414,7 +450,12 @@ public class ChatService {
     }
 
     @Transactional
-    public String addParticipant(Long currentUserId, Long conversationId, Long participantUserId) {
+    public String addParticipant(CustomUserDetails customUserDetails, Long conversationId, Long participantUserId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long currentUserId = customUserDetails.getUserId();
+
         ChatConversation conversation = conversationRepository.findById(conversationId)
                         .orElseThrow(() -> new KnewitException("CHAT_NOT_FOUND", "Conversation not found",
                                 HttpStatus.NOT_FOUND));
@@ -480,8 +521,39 @@ public class ChatService {
         return "Participant Added Successfully";
     }
 
+    @Transactional(readOnly = true)
+    public List<ChatParticipantDto> getAllParticipants(CustomUserDetails customUserDetails, Long conversationId) {
+
+        if (customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long currentUserId = customUserDetails.getUserId();
+
+        participantRepository.findByConversationIdAndUserId(conversationId, currentUserId)
+                .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant of this conversation",
+                                                        HttpStatus.FORBIDDEN));
+
+        return participantRepository
+                .findAllByConversationId(conversationId)
+                .stream()
+                .filter(participant -> participant.getLeftAt() == null)
+                .map(participant -> ChatParticipantDto.builder()
+                                .userId(participant.getUser().getId())
+                                .username(participant.getUser().getUsername())
+                                .avatarUrl(participant.getUser().getAvatarUrl())
+                                .avatarPublicId(participant.getUser().getAvatarPublicId())
+                                .isMuted(participant.getIsMuted())
+                                .build())
+                .toList();
+    }
+
     @Transactional
-    public String leaveGroup(Long userId, Long conversationId) {
+    public String leaveGroup(CustomUserDetails customUserDetails, Long conversationId) {
+        if(customUserDetails == null) {
+            throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
+        }
+        Long userId = customUserDetails.getUserId();
         ChatConversation conversation = conversationRepository.findById(conversationId)
                         .orElseThrow(() -> new KnewitException("CHAT_NOT_FOUND", "Conversation not found",
                                         HttpStatus.NOT_FOUND));
