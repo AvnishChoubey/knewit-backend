@@ -3,11 +3,10 @@ spring:
     name: backend
   elasticsearch:
     uris: ${ES_URL}
-#    username: ${ES_USERNAME}
-#    password: ${ES_PASSWORD}
-#    headers:
-#      Accept: "application/vnd.elasticsearch+json;compatible-with=8"
-#      Content-Type: "application/vnd.elasticsearch+json;compatible-with=8"
+    username: ${ES_USERNAME}
+    password: ${ES_PASSWORD}
+    ssl:
+      verification-mode: none
   mail:
     host: ${EMAIL_APP_HOST}
     port: ${EMAIL_APP_PORT}
@@ -66,4 +65,4 @@ cloudinary:
   api-secret: ${COUDINARY_API_SECRET}
 
 secret-key: ${JWT_SECRET_KEY}
-auth-url: http://localhost:8080/api/v1/auth
+frontend-url: http://localhost:8080/api/v1/auth

@@ -7,7 +7,6 @@ import com.knewit.backend.comment.dto.CommentDto;
 import com.knewit.backend.comment.dto.CreateCommentRequest;
 import com.knewit.backend.comment.dto.UpdateCommentRequest;
 import com.knewit.backend.comment.entity.Comment;
-import com.knewit.backend.comment.entity.CommentSave;
 import com.knewit.backend.comment.entity.CommentVote;
 import com.knewit.backend.comment.enums.CommentStatus;
 import com.knewit.backend.comment.repository.CommentRepository;
@@ -17,7 +16,10 @@ import com.knewit.backend.common.enums.VoteType;
 import com.knewit.backend.common.exception.KnewitException;
 import com.knewit.backend.post.entity.Post;
 import com.knewit.backend.post.repository.PostRepository;
+import com.knewit.backend.search.entity.CommentDocument;
+import com.knewit.backend.search.service.SearchService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +36,13 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final CommentVoteRepository commentVoteRepository;
-
+    @Autowired private SearchService searchService;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
     private final CommentSaveRepository commentSaveRepository;
 
-    private CommentDto convertToDto(Comment comment, Long viewerId) {
+    private CommentDto commentToCommentDto(Comment comment, Long viewerId) {
 
         boolean saved = false;
 
@@ -84,7 +86,7 @@ public class CommentService {
 
         return commentRepository.findAllByPost_IdAndCommentStatus(postId, CommentStatus.PUBLISHED)
                 .stream()
-                .map(comment -> convertToDto(comment, viewerId))
+                .map(comment -> commentToCommentDto(comment, viewerId))
                 .toList();
     }
 
@@ -217,7 +219,11 @@ public class CommentService {
 
         commentRepository.save(comment);
 
-        return convertToDto(comment, userId);
+        CommentDocument commentDocument = commentToCommentDocument(comment);
+
+        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "UPDATE", commentDocument);
+
+        return commentToCommentDto(comment, userId);
     }
 
     private void softDeleteChildren(Long parentCommentId) {
@@ -226,6 +232,15 @@ public class CommentService {
         for (Comment child : children) {
             child.setCommentStatus(CommentStatus.REMOVED);
             commentRepository.save(child);
+            CommentDocument commentDocument = CommentDocument.builder()
+                    .id(child.getId().toString())
+                    .body(child.getBody())
+                    .postId(child.getPost().getId().toString())
+                    .authorUsername(child.getAuthor().getUsername())
+                    .contentStatus(child.getCommentStatus().toString())
+                    .build();
+
+            searchService.enqueueSyncEvent("COMMENT", child.getId(), "DELETE", commentDocument);
             softDeleteChildren(child.getId());
         }
     }
@@ -247,6 +262,10 @@ public class CommentService {
         comment.setCommentStatus(CommentStatus.REMOVED);
 
         commentRepository.save(comment);
+
+        CommentDocument commentDocument = commentToCommentDocument(comment);
+
+        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "DELETE", commentDocument);
 
         softDeleteChildren(comment.getId());
     }
@@ -302,6 +321,10 @@ public class CommentService {
 
         comment = commentRepository.save(comment);
 
+        CommentDocument commentDocument = commentToCommentDocument(comment);
+
+        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "CREATE", commentDocument);
+
         CommentVote selfVote = CommentVote.builder()
                         .comment(comment)
                         .user(author)
@@ -314,6 +337,16 @@ public class CommentService {
 
         postRepository.save(post);
 
-        return convertToDto(comment, authorId);
+        return commentToCommentDto(comment, authorId);
+    }
+
+    private CommentDocument commentToCommentDocument(Comment comment) {
+        return CommentDocument.builder()
+                .id(comment.getId().toString())
+                .body(comment.getBody())
+                .postId(comment.getPost().getId().toString())
+                .authorUsername(comment.getAuthor().getUsername())
+                .contentStatus(comment.getCommentStatus().toString())
+                .build();
     }
 }

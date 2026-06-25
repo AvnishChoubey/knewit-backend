@@ -12,15 +12,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/search")
+@RequestMapping("/api/v1")
 public class SearchController {
 
     @Autowired private SearchService searchService;
 
-    @GetMapping("/")
-    public ResponseEntity<SearchResponseDto> search(
-            @RequestParam(value = "q", required = false) String q,
-            @RequestParam(value = "query", required = false) String queryParam) {
+    @GetMapping("/search")
+    public ResponseEntity<SearchResponseDto> search(@RequestParam(value = "q", required = false) String q,
+                                                    @RequestParam(value = "query", required = false) String queryParam) {
         
         String term = q != null ? q : queryParam;
         if (term == null || term.isBlank()) {

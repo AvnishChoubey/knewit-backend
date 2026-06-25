@@ -12,6 +12,8 @@ import com.knewit.backend.post.entity.PostMedia;
 import com.knewit.backend.post.entity.PostVote;
 import com.knewit.backend.post.enums.PostStatus;
 import com.knewit.backend.post.repository.*;
+import com.knewit.backend.search.entity.SubredditDocument;
+import com.knewit.backend.search.service.SearchService;
 import com.knewit.backend.subreddit.dto.*;
 import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.entity.SubredditMember;
@@ -32,10 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.knewit.backend.subreddit.entity.SubredditJoinRequest;
 import com.knewit.backend.subreddit.enums.SubredditJoinRequestStatus;
 import com.knewit.backend.subreddit.repository.SubredditJoinRequestRepository;
-import  com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import org.springframework.web.multipart.MultipartFile;
 import com.knewit.backend.common.service.MediaService;
-import com.knewit.backend.common.dto.MediaUploadResponse;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -45,6 +46,7 @@ import java.util.List;
 public class SubredditService {
     private final SubredditRepository subredditRepository;
     @Autowired private PostRepository postRepository;
+    @Autowired private SearchService searchService;
     private final SubredditMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final SubredditJoinRequestRepository joinRequestRepository;
@@ -112,7 +114,10 @@ public class SubredditService {
 
         memberRepository.save(creatorMember);
 
-        return convertToDto(subreddit);
+        SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "CREATE", subredditDocument);
+
+        return subredditToSubredditDto(subreddit);
     }
 
     @Transactional(readOnly = true)
@@ -183,7 +188,7 @@ public class SubredditService {
 
         subredditRepository.save(subreddit);
 
-        return convertToDto(subreddit);
+        return subredditToSubredditDto(subreddit);
     }
 
     @Transactional(readOnly = true)
@@ -222,7 +227,7 @@ public class SubredditService {
                         PostStatus.PENDING_APPROVAL,
                         pageable
                 )
-                .map(post -> convertPostToPostDto(post, moderatorId));
+                .map(post -> postToPostDto(post, moderatorId));
     }
 
 
@@ -305,7 +310,7 @@ public class SubredditService {
 
         subredditRepository.save(subreddit);
 
-        return convertToDto(subreddit);
+        return subredditToSubredditDto(subreddit);
     }
 
     @Transactional(readOnly = true)
@@ -314,7 +319,7 @@ public class SubredditService {
         Subreddit subreddit = subredditRepository.findByName(subredditName)
                 .orElseThrow(() -> new RuntimeException("Subreddit not found"));
 
-        return convertToDto(subreddit);
+        return subredditToSubredditDto(subreddit);
     }
 
     @Transactional(readOnly = true)
@@ -322,7 +327,7 @@ public class SubredditService {
 
         return subredditRepository.findAll()
                 .stream()
-                .map(this::convertToDto)
+                .map(this::subredditToSubredditDto)
                 .toList();
     }
 
@@ -750,13 +755,12 @@ public class SubredditService {
             );
         }
 
-        subredditRepository.save(
-                subreddit
-        );
+        subredditRepository.save(subreddit);
 
-        return convertToDto(
-                subreddit
-        );
+        SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "UPDATE", subredditDocument);
+
+        return subredditToSubredditDto(subreddit);
     }
 
     @Transactional
@@ -826,7 +830,6 @@ public class SubredditService {
         );
     }
 
-
     @Transactional
     public void uploadBanner(Long subredditId, CustomUserDetails customUserDetails, MultipartFile file) {
         if(customUserDetails == null) {
@@ -866,7 +869,6 @@ public class SubredditService {
         );
     }
 
-
     @Transactional(readOnly = true)
     public List<SubredditMemberDto> getBannedMembers(Long subredditId, CustomUserDetails customUserDetails) {
         if(customUserDetails == null) {
@@ -892,18 +894,18 @@ public class SubredditService {
 
     @Transactional(readOnly = true)
     public List<SubredditDto> getSubredditsByTopic(String topic) {
-        if(topic == null || !topic.isEmpty()) {
+        if(topic != null && !topic.isEmpty()) {
             return subredditRepository
                     .findByTopic(Topic.valueOf(topic.toUpperCase()))
                     .stream()
-                    .map(this::convertToDto)
+                    .map(this::subredditToSubredditDto)
                     .toList();
         } else {
             return getAllSubreddits();
         }
     }
 
-    private SubredditDto convertToDto(Subreddit subreddit) {
+    private SubredditDto subredditToSubredditDto(Subreddit subreddit) {
 
         return SubredditDto.builder()
                 .id(subreddit.getId())
@@ -971,7 +973,7 @@ public class SubredditService {
 
         subredditRepository.save(subreddit);
 
-        return convertPostToPostDto(post, moderatorId);
+        return postToPostDto(post, moderatorId);
     }
 
     @Transactional(readOnly = true)
@@ -993,7 +995,7 @@ public class SubredditService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return postRepository.findBySubreddit_NameAndPostStatus(subredditName, PostStatus.PUBLISHED, pageable)
-                .map(post -> convertPostToPostDto(post, viewerId));
+                .map(post -> postToPostDto(post, viewerId));
     }
 
     // incomplete logic
@@ -1020,10 +1022,10 @@ public class SubredditService {
 
         postRepository.save(post);
 
-        return convertPostToPostDto(post, moderatorId);
+        return postToPostDto(post, moderatorId);
     }
 
-    private PostDto convertPostToPostDto(Post post, Long viewerId) {
+    private PostDto postToPostDto(Post post, Long viewerId) {
 
         boolean followed = false;
 
@@ -1081,6 +1083,14 @@ public class SubredditService {
                 .votedState(votedState)
                 .saved(saved)
                 .followed(followed)
+                .build();
+    }
+
+    private SubredditDocument subredditToSubredditDocument(Subreddit subreddit) {
+        return SubredditDocument.builder()
+                .id(subreddit.getId().toString())
+                .name(subreddit.getName())
+                .title(subreddit.getTitle())
                 .build();
     }
 }

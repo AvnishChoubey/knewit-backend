@@ -11,8 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SubredditDocument {
     private String id;
-    private String name; // slug
-    private String title; // display title
-    private String iconUrl;
-    private String visibility;
+    private String name;
+    private String title;
 }

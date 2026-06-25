@@ -273,12 +273,9 @@ public class SubredditController {
         );
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<SubredditDto>> getSubredditsByTopic(@RequestParam(value = "topic", required = false) String topic) {
-
-        return ResponseEntity.ok(
-                subredditService.getSubredditsByTopic(topic)
-        );
+        return ResponseEntity.ok(subredditService.getSubredditsByTopic(topic));
     }
 
     @GetMapping("/{subredditId}/pending")
