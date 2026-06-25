@@ -94,7 +94,7 @@ public class UserService {
 
     @Transactional
     public AuthenticatedUserDto getMe(CustomUserDetails customUserDetails) {
-        if(customUserDetails.getUserId() != customUserDetails.getUserId()) {
+        if(customUserDetails == null) {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
@@ -598,6 +598,5 @@ public class UserService {
                 .upvoteCount(post.getUpvoteCount())
                 .commentCount(post.getCommentCount())
                 .build();
-
     }
 }

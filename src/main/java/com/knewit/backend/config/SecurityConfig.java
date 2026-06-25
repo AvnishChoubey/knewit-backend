@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**").permitAll()
                         // USERS
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/me").hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/user/").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/*/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/*/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/user/**").hasRole("USER")
