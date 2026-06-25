@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
-    Page<ChatMessage> findByConversationIdAndDeletedAtIsNullOrderBySentAtDesc(Long conversationId,
+    Page<ChatMessage> findByConversation_IdAndDeletedAtIsNullOrderBySentAtDesc(Long conversationId,
                                                                               Pageable pageable);
-    Optional<ChatMessage> findByIdAndConversationId(Long messageId, Long conversationId);
+    Optional<ChatMessage> findByIdAndConversation_Id(Long messageId, Long conversationId);
 }

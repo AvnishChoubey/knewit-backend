@@ -44,7 +44,7 @@ public class ChatService {
         }
         Long userId = customUserDetails.getUserId();
 
-        ChatParticipant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
+        ChatParticipant participant = participantRepository.findByConversation_IdAndUser_Id(conversationId, userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
 
@@ -54,7 +54,7 @@ public class ChatService {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<ChatMessage> messagePage = messageRepository.findByConversationIdAndDeletedAtIsNullOrderBySentAtDesc(
+        Page<ChatMessage> messagePage = messageRepository.findByConversation_IdAndDeletedAtIsNullOrderBySentAtDesc(
                                 conversationId, pageable);
 
         List<ChatMessageDto> messages = messagePage.getContent().stream()
@@ -96,7 +96,7 @@ public class ChatService {
         User sender = userRepository.findById(senderId).orElseThrow(() ->
                         new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
-        ChatParticipant senderParticipant = participantRepository.findByConversationIdAndUserId(conversationId, senderId)
+        ChatParticipant senderParticipant = participantRepository.findByConversation_IdAndUser_Id(conversationId, senderId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
 
@@ -119,7 +119,7 @@ public class ChatService {
         conversation.setLastMessageAt(now);
         conversationRepository.save(conversation);
 
-        List<ChatParticipant> participants = participantRepository.findAllByConversationId(conversationId);
+        List<ChatParticipant> participants = participantRepository.findAllByConversation_Id(conversationId);
 
         for (ChatParticipant participant : participants) {
             if (participant.getLeftAt() != null) {
@@ -153,14 +153,14 @@ public class ChatService {
         }
         Long userId = customUserDetails.getUserId();
 
-        List<ChatParticipant> participations = participantRepository.findByUserIdAndLeftAtIsNull(userId);
+        List<ChatParticipant> participations = participantRepository.findByUser_IdAndLeftAtIsNull(userId);
         return participations.stream()
                 .filter(participant -> participant.getConversation().getDeletedAt() == null)
                 .map(participant -> {
                     ChatConversation conversation = participant.getConversation();
                     String title;
                     if (conversation.getConversationType() == ConversationType.DIRECT) {
-                        List<ChatParticipant> participants = participantRepository.findAllByConversationId(
+                        List<ChatParticipant> participants = participantRepository.findAllByConversation_Id(
                                                 conversation.getId());
                         ChatParticipant otherParticipant = participants.stream()
                                 .filter(p -> !p.getUser().getId().equals(userId)).findFirst().orElse(null);
@@ -211,14 +211,14 @@ public class ChatService {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "Target user not found", HttpStatus.NOT_FOUND));
 
-        List<ChatParticipant> currentUserChats = participantRepository.findByUserIdAndLeftAtIsNull(currentUserId);
+        List<ChatParticipant> currentUserChats = participantRepository.findByUser_IdAndLeftAtIsNull(currentUserId);
 
         for (ChatParticipant participant : currentUserChats) {
             ChatConversation conversation = participant.getConversation();
             if (conversation.getConversationType() != ConversationType.DIRECT) {
                 continue;
             }
-            List<ChatParticipant> participants = participantRepository.findAllByConversationId(conversation.getId());
+            List<ChatParticipant> participants = participantRepository.findAllByConversation_Id(conversation.getId());
 
             boolean targetExists = participants.stream().anyMatch(p -> p.getUser().getId().equals(targetUserId));
 
@@ -335,7 +335,7 @@ public class ChatService {
         }
         Long userId = customUserDetails.getUserId();
 
-        ChatParticipant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
+        ChatParticipant participant = participantRepository.findByConversation_IdAndUser_Id(conversationId, userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
 
@@ -371,7 +371,7 @@ public class ChatService {
             throw new KnewitException("INVALID_MESSAGE", "Message cannot be empty", HttpStatus.BAD_REQUEST);
         }
 
-        ChatMessage message = messageRepository.findByIdAndConversationId(messageId, conversationId)
+        ChatMessage message = messageRepository.findByIdAndConversation_Id(messageId, conversationId)
                 .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found in this chat",
                                         HttpStatus.NOT_FOUND));
 
@@ -383,7 +383,7 @@ public class ChatService {
             throw new KnewitException("UNAUTHORIZED_EDIT", "You can only edit your own messages", HttpStatus.FORBIDDEN);
         }
 
-        ChatParticipant participant = participantRepository.findByConversationIdAndUserId(message.getConversation().getId(), userId)
+        ChatParticipant participant = participantRepository.findByConversation_IdAndUser_Id(message.getConversation().getId(), userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
         if (participant.getLeftAt() != null) {
@@ -416,7 +416,7 @@ public class ChatService {
         }
         Long userId = customUserDetails.getUserId();
 
-        ChatMessage message = messageRepository.findByIdAndConversationId(messageId, conversationId)
+        ChatMessage message = messageRepository.findByIdAndConversation_Id(messageId, conversationId)
                 .orElseThrow(() -> new KnewitException("MESSAGE_NOT_FOUND", "Message not found in this chat",
                                                         HttpStatus.NOT_FOUND));
 
@@ -428,7 +428,7 @@ public class ChatService {
             throw new KnewitException("UNAUTHORIZED_DELETE", "You can only delete your own messages", HttpStatus.FORBIDDEN);
         }
 
-        ChatParticipant participant = participantRepository.findByConversationIdAndUserId(message.getConversation().getId(), userId)
+        ChatParticipant participant = participantRepository.findByConversation_IdAndUser_Id(message.getConversation().getId(), userId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                         HttpStatus.FORBIDDEN));
 
@@ -465,7 +465,7 @@ public class ChatService {
                                 HttpStatus.BAD_REQUEST);
         }
 
-        ChatParticipant creatorParticipant = participantRepository.findByConversationIdAndUserId(conversationId, currentUserId)
+        ChatParticipant creatorParticipant = participantRepository.findByConversation_IdAndUser_Id(conversationId, currentUserId)
                         .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant",
                                 HttpStatus.FORBIDDEN));
 
@@ -478,7 +478,7 @@ public class ChatService {
                                 HttpStatus.FORBIDDEN);
         }
 
-        if (participantRepository.findByConversationIdAndUserId(conversationId, participantUserId).isPresent()) {
+        if (participantRepository.findByConversation_IdAndUser_Id(conversationId, participantUserId).isPresent()) {
             throw new KnewitException("USER_ALREADY_EXISTS", "User already belongs to this group",
                     HttpStatus.BAD_REQUEST);
         }
@@ -530,12 +530,12 @@ public class ChatService {
 
         Long currentUserId = customUserDetails.getUserId();
 
-        participantRepository.findByConversationIdAndUserId(conversationId, currentUserId)
+        participantRepository.findByConversation_IdAndUser_Id(conversationId, currentUserId)
                 .orElseThrow(() -> new KnewitException("UNAUTHORIZED_CHAT_ACCESS", "You are not a participant of this conversation",
                                                         HttpStatus.FORBIDDEN));
 
         return participantRepository
-                .findAllByConversationId(conversationId)
+                .findAllByConversation_Id(conversationId)
                 .stream()
                 .filter(participant -> participant.getLeftAt() == null)
                 .map(participant -> ChatParticipantDto.builder()
@@ -561,7 +561,7 @@ public class ChatService {
             throw new KnewitException("INVALID_CONVERSATION", "Cannot leave a direct conversation", HttpStatus.BAD_REQUEST);
         }
 
-        ChatParticipant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
+        ChatParticipant participant = participantRepository.findByConversation_IdAndUser_Id(conversationId, userId)
                         .orElseThrow(() -> new KnewitException("NOT_A_PARTICIPANT", "User is not a participant",
                                         HttpStatus.NOT_FOUND));
 
