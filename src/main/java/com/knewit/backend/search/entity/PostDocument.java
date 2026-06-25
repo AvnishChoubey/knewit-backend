@@ -13,9 +13,6 @@ public class PostDocument {
     private String id;
     private String title;
     private String body;
-    private String subredditSlug;
+    private String subreddit;
     private String authorUsername;
-    private String createdAt;
-    private String postStatus;
-    private String visibility;
 }

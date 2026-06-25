@@ -14,6 +14,5 @@ public class CommentDocument {
     private String body;
     private String postId;
     private String authorUsername;
-    private String createdAt;
     private String contentStatus;
 }

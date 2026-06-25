@@ -19,8 +19,8 @@ import java.io.IOException;
 
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
-    @Value("${auth-url}")
-    private String authUrl;
+    @Value("${frontend-url}")
+    private String frontendUrl;
 
     @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
@@ -46,7 +46,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         response.addCookie(cookie);
 
         if(user.getProfileCompletedAt() == null) {
-            response.sendRedirect(authUrl + "/complete-profile");
+            response.sendRedirect(frontendUrl + "/complete-profile");
         } else {
             response.sendRedirect( "http://localhost:8080/api/v1/feed");
         }

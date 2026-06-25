@@ -58,13 +58,17 @@ public class SecurityConfig {
                         // SUBREDDITS
                         .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/*/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/*/**").hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/subreddits/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/subreddits/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/subreddits/**").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/subreddits/**").hasRole("USER")
                         // SEARCH
-                        .requestMatchers(HttpMethod.GET, "/api/v1/seach/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
+                        // CHAT
+                        .requestMatchers("/api/v1/chat").hasRole("USER")
+                        .requestMatchers("/api/v1/chat/*/**").hasRole("USER")
+                        .requestMatchers("/api/v1/chat/**").hasRole("USER")
                         .anyRequest().authenticated())
 
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

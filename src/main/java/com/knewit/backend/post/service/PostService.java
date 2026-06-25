@@ -16,13 +16,14 @@ import com.knewit.backend.post.enums.MediaType;
 import com.knewit.backend.post.enums.PostStatus;
 import com.knewit.backend.post.enums.PostType;
 import com.knewit.backend.post.repository.*;
+import com.knewit.backend.search.entity.PostDocument;
+import com.knewit.backend.search.service.SearchService;
 import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.enums.MemberStatus;
 import com.knewit.backend.subreddit.enums.PostingPolicy;
 import com.knewit.backend.subreddit.enums.Visibility;
 import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;
-import com.knewit.backend.user.entity.UserBlock;
 import com.knewit.backend.user.repository.UserBlockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,7 @@ public class PostService {
     private final PostFollowRepository postFollowRepository;
     @Autowired private UserBlockRepository userBlockRepository;
     @Autowired private PostBlockRepository postBlockRepository;
+    @Autowired private SearchService searchService;
 
     @Transactional
     public PostDto createPost(CustomUserDetails customUserDetails, CreatePostRequest request) {
@@ -193,7 +195,10 @@ public class PostService {
             subredditRepository.save(subreddit);
         }
 
-        return convertToDto(
+        PostDocument postDocument = postToPostDocument(post);
+        searchService.enqueueSyncEvent("POST", post.getId(), "CREATE", postDocument);
+
+        return postToPostDto(
                 post,
                 author.getId()
         );
@@ -229,7 +234,10 @@ public class PostService {
 
         post = postRepository.save(post);
 
-        return convertToDto(post, authorId);
+        PostDocument postDocument = postToPostDocument(post);
+        searchService.enqueueSyncEvent("POST", post.getId(), "UPDATE", postDocument);
+
+        return postToPostDto(post, authorId);
     }
 
     @Transactional(readOnly = true)
@@ -249,7 +257,7 @@ public class PostService {
         postBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, postId)
                 .orElseThrow(() -> new KnewitException("POST_BLOCKED", "Post has been blocked by you.", HttpStatus.BAD_REQUEST));
 
-        return convertToDto(post, viewerId);
+        return postToPostDto(post, viewerId);
     }
 
     @Transactional
@@ -263,6 +271,9 @@ public class PostService {
                 .orElseThrow(() -> new RuntimeException("Post not found or unauthorized"));
 
         post.setPostStatus(PostStatus.ARCHIVED);
+
+        PostDocument postDocument = postToPostDocument(post);
+        searchService.enqueueSyncEvent("POST", post.getId(), "DELETE", postDocument);
 
         postRepository.save(post);
     }
@@ -366,7 +377,7 @@ public class PostService {
 
         postRepository.save(post);
 
-        return convertToDto(post, userId);
+        return postToPostDto(post, userId);
     }
 
     @Transactional(readOnly = true)
@@ -376,7 +387,7 @@ public class PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return postRepository.searchPosts(keyword, PostStatus.PUBLISHED, pageable)
-                .map(post -> convertToDto(post, viewerId));
+                .map(post -> postToPostDto(post, viewerId));
     }
 
     @Transactional(readOnly = true)
@@ -438,13 +449,13 @@ public class PostService {
                         pageable
                 )
                 .map(post ->
-                        convertToDto(
+                        postToPostDto(
                                 post,
                                 viewerId
                         ));
     }
 
-    private PostDto convertToDto(Post post, Long viewerId) {
+    private PostDto postToPostDto(Post post, Long viewerId) {
 
         boolean followed = false;
 
@@ -525,5 +536,15 @@ public class PostService {
         post.setScoreBest(calculatedScore);
         post.setScoreHot(calculatedScore);
         post.setScoreRising(calculatedScore);
+    }
+
+    private PostDocument postToPostDocument(Post post) {
+        return PostDocument.builder()
+                .id(post.getId().toString())
+                .title(post.getTitle())
+                .body(post.getBody())
+                .subreddit(post.getSubreddit().getName())
+                .authorUsername(post.getAuthor().getUsername())
+                .build();
     }
 }

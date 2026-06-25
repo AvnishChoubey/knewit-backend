@@ -24,6 +24,7 @@ import com.knewit.backend.post.repository.PostBlockRepository;
 import com.knewit.backend.post.repository.PostFollowRepository;
 import com.knewit.backend.post.repository.PostRepository;
 import com.knewit.backend.post.repository.PostSaveRepository;
+import com.knewit.backend.search.entity.UserDocument;
 import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.entity.SubredditMember;
 import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
@@ -562,7 +563,7 @@ public class UserService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return postRepository.findByAuthor_IdAndPostStatus(authorId, PostStatus.PUBLISHED, pageable)
-                .map(post -> convertToDto(post));
+                .map(post -> postToPostDto(post));
     }
 
     private UserProfileDto getUserProfileDto(User user) {
@@ -585,7 +586,7 @@ public class UserService {
                 .build();
     }
 
-    public PostDto convertToDto(Post post) {
+    public PostDto postToPostDto(Post post) {
         return PostDto.builder()
                 .id(post.getId())
                 .body(post.getBody())

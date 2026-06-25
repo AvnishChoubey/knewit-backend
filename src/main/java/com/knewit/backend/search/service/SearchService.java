@@ -85,7 +85,7 @@ public class SearchService {
                 for (Hit<UserDocument> hit : userResponse.hits().hits()) {
                     UserDocument doc = hit.source();
                     if (doc != null) {
-                        users.add(new SearchResponseDto.UserResultDto(doc.getUsername(), doc.getAvatarUrl()));
+                        users.add(new SearchResponseDto.UserResultDto(doc.getUsername()));
                     }
                 }
             } catch (Exception e) {
@@ -117,7 +117,7 @@ public class SearchService {
                 for (Hit<SubredditDocument> hit : subredditResponse.hits().hits()) {
                     SubredditDocument doc = hit.source();
                     if (doc != null) {
-                        subreddits.add(new SearchResponseDto.SubredditResultDto(doc.getName(), doc.getTitle(), doc.getIconUrl(), doc.getVisibility()));
+                        subreddits.add(new SearchResponseDto.SubredditResultDto(doc.getTitle()));
                     }
                 }
             } catch (Exception e) {
@@ -155,7 +155,7 @@ public class SearchService {
                 for (Hit<PostDocument> hit : postResponse.hits().hits()) {
                     PostDocument doc = hit.source();
                     if (doc != null) {
-                        posts.add(new SearchResponseDto.PostResultDto(doc.getId(), doc.getTitle(), doc.getSubredditSlug(), doc.getAuthorUsername(), doc.getCreatedAt()));
+                        posts.add(new SearchResponseDto.PostResultDto(doc.getId(), doc.getTitle(), doc.getAuthorUsername()));
                     }
                 }
             } catch (Exception e) {
@@ -187,7 +187,7 @@ public class SearchService {
                 for (Hit<CommentDocument> hit : commentResponse.hits().hits()) {
                     CommentDocument doc = hit.source();
                     if (doc != null) {
-                        comments.add(new SearchResponseDto.CommentResultDto(doc.getId(), doc.getBody(), doc.getPostId(), doc.getAuthorUsername(), doc.getCreatedAt()));
+                        comments.add(new SearchResponseDto.CommentResultDto(doc.getId(), doc.getBody(), doc.getPostId(), doc.getAuthorUsername()));
                     }
                 }
             } catch (Exception e) {
@@ -223,31 +223,69 @@ public class SearchService {
     }
 
     public void processSyncEvent(SearchIndexSyncEvent event) throws Exception {
-        String indexName = getIndexName(event.getEntityType().toLowerCase() + "s");
+
+        String indexName =
+                getIndexName(event.getEntityType().toLowerCase() + "s");
 
         if ("DELETE".equalsIgnoreCase(event.getOperation())) {
-            elasticsearchClient.delete(d -> d.index(indexName).id(event.getEntityId().toString()));
+
+            elasticsearchClient.delete(d -> d
+                    .index(indexName)
+                    .id(event.getEntityId().toString())
+            );
+
             return;
         }
 
         switch (event.getEntityType().toUpperCase()) {
+
             case "USER" -> {
-                UserDocument doc = objectMapper.readValue(event.getPayload(), UserDocument.class);
-                elasticsearchClient.index(i -> i.index(indexName).id(doc.getId()).document(doc));
+                UserDocument doc =
+                        objectMapper.readValue(event.getPayload(), UserDocument.class);
+
+                elasticsearchClient.index(i -> i
+                        .index(indexName)
+                        .id(doc.getId())
+                        .document(doc)
+                );
             }
-            case "SUBREDDIT" -> {
-                SubredditDocument doc = objectMapper.readValue(event.getPayload(), SubredditDocument.class);
-                elasticsearchClient.index(i -> i.index(indexName).id(doc.getId()).document(doc));
-            }
+
             case "POST" -> {
-                PostDocument doc = objectMapper.readValue(event.getPayload(), PostDocument.class);
-                elasticsearchClient.index(i -> i.index(indexName).id(doc.getId()).document(doc));
+                PostDocument doc =
+                        objectMapper.readValue(event.getPayload(), PostDocument.class);
+
+                elasticsearchClient.index(i -> i
+                        .index(indexName)
+                        .id(doc.getId())
+                        .document(doc)
+                );
             }
+
+            case "SUBREDDIT" -> {
+                SubredditDocument doc =
+                        objectMapper.readValue(event.getPayload(), SubredditDocument.class);
+
+                elasticsearchClient.index(i -> i
+                        .index(indexName)
+                        .id(doc.getId())
+                        .document(doc)
+                );
+            }
+
             case "COMMENT" -> {
-                CommentDocument doc = objectMapper.readValue(event.getPayload(), CommentDocument.class);
-                elasticsearchClient.index(i -> i.index(indexName).id(doc.getId()).document(doc));
+                CommentDocument doc =
+                        objectMapper.readValue(event.getPayload(), CommentDocument.class);
+
+                elasticsearchClient.index(i -> i
+                        .index(indexName)
+                        .id(doc.getId())
+                        .document(doc)
+                );
             }
-            default -> throw new IllegalArgumentException("Unknown entity type: " + event.getEntityType());
+
+            default -> throw new IllegalArgumentException(
+                    "Unknown entity type: " + event.getEntityType()
+            );
         }
     }
 }

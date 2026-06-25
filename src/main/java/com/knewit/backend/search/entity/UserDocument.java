@@ -12,5 +12,4 @@ import lombok.NoArgsConstructor;
 public class UserDocument {
     private String id;
     private String username;
-    private String avatarUrl;
 }

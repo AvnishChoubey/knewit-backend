@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 
 @Configuration
 @ConfigurationProperties(prefix = "app.elasticsearch")
@@ -19,7 +22,9 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchConfig {
     @Value("${spring.elasticsearch.uris}")
     private String url;
+    @Value("${spring.elasticsearch.username}")
     private String username;
+    @Value("${spring.elasticsearch.password}")
     private String password;
     private String indexPrefix;
     private String syncStrategy;
@@ -28,7 +33,20 @@ public class ElasticsearchConfig {
     @Bean
     public RestClient restClient() {
         String hostUrl = url != null && !url.isBlank() ? url : "http://localhost:9200";
-        return RestClient.builder(HttpHost.create(hostUrl)).build();
+        System.out.println(hostUrl);
+        BasicCredentialsProvider provider = new BasicCredentialsProvider();
+        provider.setCredentials(
+                AuthScope.ANY,
+                new UsernamePasswordCredentials("elastic", password)
+        );
+
+        RestClient restClient = RestClient.builder(
+                HttpHost.create(url)
+        ).setHttpClientConfigCallback(httpClientBuilder ->
+                httpClientBuilder.setDefaultCredentialsProvider(provider)
+        ).build();
+
+        return restClient;
     }
 
     @Bean

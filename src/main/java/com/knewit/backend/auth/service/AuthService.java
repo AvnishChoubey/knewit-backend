@@ -187,7 +187,6 @@ public class AuthService {
         UserDocument userDoc = UserDocument.builder()
                 .id(user.getId().toString())
                 .username(user.getUsername())
-                .avatarUrl(user.getAvatarUrl())
                 .build();
         searchService.enqueueSyncEvent("USER", user.getId(), "UPDATE", userDoc);
 

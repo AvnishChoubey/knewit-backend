@@ -1,9 +1,12 @@
 package com.knewit.backend.search.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -29,7 +32,7 @@ public class SearchIndexSyncEvent {
     @Column(nullable = false, length = 50)
     private String operation; // CREATE, UPDATE, DELETE
 
-    @Column(nullable = false, columnDefinition = "jsonb")
+    @Column(nullable = false)
     private String payload;
 
     @Column(nullable = false, length = 50)

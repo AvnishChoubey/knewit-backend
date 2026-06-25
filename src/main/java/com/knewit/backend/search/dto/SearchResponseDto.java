@@ -32,7 +32,6 @@ public class SearchResponseDto {
     @AllArgsConstructor
     public static class UserResultDto {
         private String username;
-        private String avatarUrl;
     }
 
     @Data
@@ -40,10 +39,7 @@ public class SearchResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SubredditResultDto {
-        private String slug; // subreddit name field
         private String name; // subreddit title field
-        private String iconUrl;
-        private String visibility;
     }
 
     @Data
@@ -53,9 +49,7 @@ public class SearchResponseDto {
     public static class PostResultDto {
         private String postId;
         private String title;
-        private String subredditSlug;
         private String authorUsername;
-        private String createdAt;
     }
 
     @Data
@@ -67,6 +61,5 @@ public class SearchResponseDto {
         private String body;
         private String postId;
         private String authorUsername;
-        private String createdAt;
     }
 }
