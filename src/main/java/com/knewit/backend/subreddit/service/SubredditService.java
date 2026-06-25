@@ -892,11 +892,15 @@ public class SubredditService {
 
     @Transactional(readOnly = true)
     public List<SubredditDto> getSubredditsByTopic(String topic) {
-        return subredditRepository
-                .findByTopic(Topic.valueOf(topic.toUpperCase()))
-                .stream()
-                .map(this::convertToDto)
-                .toList();
+        if(topic == null || !topic.isEmpty()) {
+            return subredditRepository
+                    .findByTopic(Topic.valueOf(topic.toUpperCase()))
+                    .stream()
+                    .map(this::convertToDto)
+                    .toList();
+        } else {
+            return getAllSubreddits();
+        }
     }
 
     private SubredditDto convertToDto(Subreddit subreddit) {

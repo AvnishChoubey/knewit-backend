@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.elasticsearch")
 @Data
 public class ElasticsearchConfig {
-    @Value("${spring.elasticsearch.uri}")
+    @Value("${spring.elasticsearch.uris}")
     private String url;
     private String username;
     private String password;
