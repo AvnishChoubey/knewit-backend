@@ -162,7 +162,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
-        if(user.getUsername() != null) {
+        if(user.getUsername() == null) {
             throw new KnewitException("EMPTY_USERNAME", "Username cannot be empty", HttpStatus.CONFLICT);
         }
 

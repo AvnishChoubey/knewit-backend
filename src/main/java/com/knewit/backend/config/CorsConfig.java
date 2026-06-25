@@ -16,10 +16,10 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
 
-                registry.addMapping("/*")
-                        .allowedOriginPatterns("http://localhost/:")
-                        .allowedMethods("")
-                        .allowedHeaders("")
+                registry.addMapping("/**")
+                        .allowedOriginPatterns("http://localhost:5173/")
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+                        .allowedHeaders("*")
                         .allowCredentials(true);
             }
         };

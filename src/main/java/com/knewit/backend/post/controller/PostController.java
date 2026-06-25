@@ -23,8 +23,7 @@ public class PostController {
     @Autowired
     private  PostService postService;
 
-    @PostMapping(name = "/create",
-            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/create", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostDto> createPost(@AuthenticationPrincipal CustomUserDetails customUserDetails, @ModelAttribute CreatePostRequest request) {
 
         return ResponseEntity.ok(
