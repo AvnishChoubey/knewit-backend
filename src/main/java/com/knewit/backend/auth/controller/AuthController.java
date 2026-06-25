@@ -6,6 +6,7 @@ import com.knewit.backend.auth.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -46,10 +47,16 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/complete-profile")
+//    @PostMapping("/complete-profile")
+//    public ResponseEntity<ProfileCompletionResponse> completeProfile(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+//                                                                     @RequestPart ProfileCompletionRequest profileCompletionRequest,
+//                                                                     @RequestPart(required = false, name = "avatar") MultipartFile file) {
+//        return ResponseEntity.ok(authService.completeProfile(customUserDetails, profileCompletionRequest, file));
+//    }
+
+    @PostMapping(value = "/complete-profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProfileCompletionResponse> completeProfile(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-                                                                     @RequestPart ProfileCompletionRequest profileCompletionRequest,
-                                                                     @RequestPart(required = false, name = "avatar") MultipartFile file) {
-        return ResponseEntity.ok(authService.completeProfile(customUserDetails, profileCompletionRequest, file));
+                                                                     @ModelAttribute ProfileCompletionRequest profileCompletionRequest) {
+        return ResponseEntity.ok(authService.completeProfile(customUserDetails, profileCompletionRequest));
     }
 }

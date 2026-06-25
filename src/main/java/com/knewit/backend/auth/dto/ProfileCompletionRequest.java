@@ -24,4 +24,5 @@ public class ProfileCompletionRequest {
     private List<String> interests;
 
     private String bio;
+    private MultipartFile file;
 }

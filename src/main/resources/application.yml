@@ -2,7 +2,12 @@ spring:
   application:
     name: backend
   elasticsearch:
-    uri: ${ES_URL:http://localhost:9200}
+    uris: ${ES_URL}
+#    username: ${ES_USERNAME}
+#    password: ${ES_PASSWORD}
+#    headers:
+#      Accept: "application/vnd.elasticsearch+json;compatible-with=8"
+#      Content-Type: "application/vnd.elasticsearch+json;compatible-with=8"
   mail:
     host: ${EMAIL_APP_HOST}
     port: ${EMAIL_APP_PORT}
@@ -37,7 +42,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -45,7 +50,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   servlet:
     multipart:
-      enabled: truelogging.level.org.hibernate.SQL=DEBUG
+      enabled: true
       max-file-size: 20MB
       max-request-size: 20MB
 logging:

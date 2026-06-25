@@ -152,7 +152,7 @@ public class AuthService {
     }
 
     @Transactional
-    public ProfileCompletionResponse completeProfile(CustomUserDetails customUserDetails, ProfileCompletionRequest request, MultipartFile file) {
+    public ProfileCompletionResponse completeProfile(CustomUserDetails customUserDetails, ProfileCompletionRequest request) {
         if(customUserDetails == null) {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
@@ -173,9 +173,9 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setBio(request.getBio());
 
-        if(file != null) {
+        if(request.getFile() != null) {
             System.out.println("AVATAR UPLOADING START");
-            MediaUploadResponse mediaUploadResponse = mediaService.uploadFile(file, "/knewit/users/avatars");
+            MediaUploadResponse mediaUploadResponse = mediaService.uploadFile(request.getFile(), "/knewit/users/avatars");
             System.out.println("AVATAR UPLOADED SUCCESSFULLY");
             user.setAvatarUrl(mediaUploadResponse.getUrl());
             user.setAvatarPublicId(mediaUploadResponse.getPublicId());

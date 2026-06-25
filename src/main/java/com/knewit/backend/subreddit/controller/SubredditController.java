@@ -274,18 +274,10 @@ public class SubredditController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<List<SubredditDto>> getSubredditsByTopic(@RequestParam("topic") String topic) {
+    public ResponseEntity<List<SubredditDto>> getSubredditsByTopic(@RequestParam(value = "topic", required = false) String topic) {
 
         return ResponseEntity.ok(
                 subredditService.getSubredditsByTopic(topic)
-        );
-    }
-
-    @GetMapping("/")
-    public ResponseEntity<List<SubredditDto>> getAllSubreddits() {
-
-        return ResponseEntity.ok(
-                subredditService.getAllSubreddits()
         );
     }
 
