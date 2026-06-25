@@ -47,6 +47,13 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  app:
+    websocket:
+      endpoint-path: /ws
+      broker-prefix: /app
+      topic-prefix: /topic
+      queue-prefix: /queue
+      allowed-origins: http://localhost:5173
   servlet:
     multipart:
       enabled: true
