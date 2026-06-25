@@ -65,6 +65,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/subreddits/**").hasRole("USER")
                         // SEARCH
                         .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
+                        // CHAT
+                        .requestMatchers("/api/v1/chat").hasRole("USER")
+                        .requestMatchers("/api/v1/chat/*/**").hasRole("USER")
+                        .requestMatchers("/api/v1/chat/**").hasRole("USER")
                         .anyRequest().authenticated())
 
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
