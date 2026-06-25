@@ -24,8 +24,7 @@ public class SubredditController {
     private final SubredditService subredditService;
 
     @GetMapping("/{name}")
-    public ResponseEntity<SubredditDto> getSubreddit(
-            @PathVariable String name) {
+    public ResponseEntity<SubredditDto> getSubreddit(@PathVariable String name) {
         return ResponseEntity.ok(
                 subredditService.getSubreddit(name)
         );
@@ -274,9 +273,8 @@ public class SubredditController {
         );
     }
 
-    @GetMapping("/topic/{topic}")
-    public ResponseEntity<List<SubredditDto>> getSubredditsByTopic(
-            @PathVariable String topic) {
+    @GetMapping("/")
+    public ResponseEntity<List<SubredditDto>> getSubredditsByTopic(@RequestParam("topic") String topic) {
 
         return ResponseEntity.ok(
                 subredditService.getSubredditsByTopic(topic)
@@ -316,7 +314,7 @@ public class SubredditController {
         return ResponseEntity.ok(subredditService.getPostsBySubreddit(subredditName, customUserDetails, page, size));
     }
 
-    @PatchMapping("/subreddit/{subredditId}/posts/{postId}/reject")
+    @PatchMapping("/{subredditId}/posts/{postId}/reject")
     public ResponseEntity<PostDto> rejectPost(@AuthenticationPrincipal CustomUserDetails customUserDetails,
                                               @PathVariable("subredditId") Long subredditId,
                                               @PathVariable("postId") Long postId) {

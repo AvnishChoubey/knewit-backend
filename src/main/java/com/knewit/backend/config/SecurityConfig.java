@@ -6,6 +6,7 @@ import com.knewit.backend.auth.service.CustomOAuth2UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,9 +29,42 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // AUTH
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/oauth2/**").permitAll()
+                        // USERS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user/me").hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user/").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user/*/posts").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user/*/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/user/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/user/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/user/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/user/**").hasRole("USER")
+                        // COMMENTS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/posts/*/comments/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/posts/*/comments/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/*/comments/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/*/comments/**").hasRole("USER")
+                        // POSTS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/posts/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/posts/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/**").hasRole("USER")
+                        // SUBREDDITS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/*/posts").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/*/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/subreddits/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/subreddits/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/subreddits/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/subreddits/**").hasRole("USER")
+                        // SEARCH
+                        .requestMatchers(HttpMethod.GET, "/api/v1/seach/**").permitAll()
                         .anyRequest().authenticated())
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService)).successHandler(oAuth2SuccessHandler))

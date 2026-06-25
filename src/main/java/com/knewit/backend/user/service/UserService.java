@@ -32,7 +32,6 @@ import com.knewit.backend.user.dto.*;
 import com.knewit.backend.user.entity.*;
 import com.knewit.backend.user.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.CustomEditorConfigurer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -459,7 +458,7 @@ public class UserService {
         else if(entity.equalsIgnoreCase("POST")) {
             Post blocked = postRepository.findById(entityId).orElseThrow(() -> new KnewitException("POST_NOT_FOUND", "Blocked post not found", HttpStatus.NOT_FOUND));
 
-            Optional<PostBlock> optionalPostBlock = postBlockRepository.findByBlockerAndBlocked(blocker, blocked);
+            Optional<PostBlock> optionalPostBlock = postBlockRepository.findByBlocker_IdAndBlocked_Id(blocker.getId(), blocked.getId());
 
             if(optionalPostBlock.isPresent()) {
                 throw new KnewitException("ALREADY_BLOCKED", "You have already blocking", HttpStatus.BAD_REQUEST);

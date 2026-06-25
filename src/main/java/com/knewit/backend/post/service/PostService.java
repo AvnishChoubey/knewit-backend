@@ -22,7 +22,10 @@ import com.knewit.backend.subreddit.enums.PostingPolicy;
 import com.knewit.backend.subreddit.enums.Visibility;
 import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;
+import com.knewit.backend.user.entity.UserBlock;
+import com.knewit.backend.user.repository.UserBlockRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,9 +34,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.knewit.backend.post.dto.VotePostRequest;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +49,8 @@ public class PostService {
     private final UserRepository userRepository;
     private final SubredditMemberRepository subredditMemberRepository;
     private final PostFollowRepository postFollowRepository;
+    @Autowired private UserBlockRepository userBlockRepository;
+    @Autowired private PostBlockRepository postBlockRepository;
 
     @Transactional
     public PostDto createPost(CustomUserDetails customUserDetails, CreatePostRequest request) {
@@ -235,13 +237,17 @@ public class PostService {
 
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
 
-        Post post = postRepository
-                .findByIdAndPostStatus(
-                        postId,
-                        PostStatus.PUBLISHED
-                )
-                .orElseThrow(() ->
-                        new RuntimeException("Post not found"));
+        Post post = postRepository.findByIdAndPostStatus(postId, PostStatus.PUBLISHED)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, post.getAuthor().getId())
+                .orElseThrow(() -> new KnewitException("USER_BLOCKED", "Post owner has been blocked by you.", HttpStatus.BAD_REQUEST));
+
+        userBlockRepository.findByBlocker_IdAndBlocked_Id(post.getAuthor().getId(), viewerId)
+                .orElseThrow(() -> new KnewitException("USER_BLOCKED", "Post owner has blocked you.", HttpStatus.BAD_REQUEST));
+
+        postBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, postId)
+                .orElseThrow(() -> new KnewitException("POST_BLOCKED", "Post has been blocked by you.", HttpStatus.BAD_REQUEST));
 
         return convertToDto(post, viewerId);
     }
@@ -253,12 +259,8 @@ public class PostService {
         }
 
         Long authorId = customUserDetails.getUserId();
-        Post post = postRepository
-                .findByIdAndAuthor_Id(postId, authorId)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Post not found or unauthorized"
-                        ));
+        Post post = postRepository.findByIdAndAuthor_Id(postId, authorId)
+                .orElseThrow(() -> new RuntimeException("Post not found or unauthorized"));
 
         post.setPostStatus(PostStatus.ARCHIVED);
 
