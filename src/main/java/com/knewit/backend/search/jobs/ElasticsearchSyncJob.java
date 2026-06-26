@@ -27,15 +27,9 @@ public class ElasticsearchSyncJob {
     @Transactional
     public void processOutbox() {
         try {
-            List<SearchIndexSyncEvent> events =
-                    outboxRepository.findTop100ByStatusAndNextAttemptAtLessThanEqual(
-                            "PENDING",
-                            LocalDateTime.now()
-                    );
+            List<SearchIndexSyncEvent> events = outboxRepository.findTop100ByStatusAndNextAttemptAtLessThanEqual("PENDING", LocalDateTime.now());
 
-            if (events.isEmpty()) {
-                return;
-            }
+            if (events.isEmpty()) { return; }
 
             log.info("Processing {} outbox events", events.size());
 

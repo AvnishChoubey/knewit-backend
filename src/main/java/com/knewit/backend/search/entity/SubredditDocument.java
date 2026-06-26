@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 @Data
 @Builder
@@ -11,6 +13,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SubredditDocument {
     private String id;
+
+    @Field(type = FieldType.Text)
     private String name;
+
+    @Field(type = FieldType.Text)
     private String title;
+
+    private String visibility;
 }

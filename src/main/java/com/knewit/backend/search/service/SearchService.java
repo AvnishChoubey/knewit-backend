@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -79,6 +80,9 @@ public class SearchService {
                         .match(m -> m
                             .field("username")
                             .query(query)
+                                .fuzziness("AUTO")
+                                .prefixLength(3)
+                                .maxExpansions(50)
                         )
                     ), UserDocument.class);
 
@@ -99,10 +103,13 @@ public class SearchService {
                     .index(getIndexName("subreddits"))
                     .query(q -> q
                         .bool(b -> b
-                            .must(m -> m
-                                .multiMatch(mm -> mm
-                                    .fields("name", "title")
-                                    .query(query)
+                                .must(m -> m
+                                    .multiMatch(mm -> mm
+                                        .fields("name", "title")
+                                        .query(query)
+                                            .fuzziness("AUTO")
+                                            .prefixLength(3)
+                                            .maxExpansions(50)
                                 )
                             )
                             .filter(f -> f
@@ -133,20 +140,17 @@ public class SearchService {
                         .bool(b -> b
                             .must(m -> m
                                 .multiMatch(mm -> mm
-                                    .fields("title", "body")
+                                    .fields("title", "body", "authorUsername", "subreddit")
                                     .query(query)
+                                        .fuzziness("AUTO")
+                                        .prefixLength(3)
+                                        .maxExpansions(50)
                                 )
                             )
                             .filter(f -> f
                                 .term(t -> t
                                     .field("postStatus")
                                     .value("PUBLISHED")
-                                )
-                            )
-                            .filter(f -> f
-                                .term(t -> t
-                                    .field("visibility")
-                                    .value("PUBLIC")
                                 )
                             )
                         )
@@ -170,9 +174,12 @@ public class SearchService {
                     .query(q -> q
                         .bool(b -> b
                             .must(m -> m
-                                .match(mt -> mt
-                                    .field("body")
+                                .multiMatch(mt -> mt
+                                    .fields("body", "authorUsername")
                                     .query(query)
+                                        .fuzziness("AUTO")
+                                        .prefixLength(3)
+                                        .maxExpansions(50)
                                 )
                             )
                             .filter(f -> f
@@ -214,6 +221,7 @@ public class SearchService {
                     .operation(operation)
                     .payload(jsonPayload)
                     .status("PENDING")
+                    .nextAttemptAt(LocalDateTime.now())
                     .build();
             outboxRepository.save(event);
         } catch (Exception e) {

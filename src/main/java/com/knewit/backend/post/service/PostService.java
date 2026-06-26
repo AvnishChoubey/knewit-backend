@@ -95,8 +95,7 @@ public class PostService {
             }
         }
 
-        if ((postType == PostType.IMAGE
-                || postType == PostType.VIDEO)
+        if ((postType == PostType.MEDIA)
                 && request.getMedia() == null) {
 
             throw new RuntimeException(
@@ -156,8 +155,7 @@ public class PostService {
 
         postVoteRepository.save(selfVote);
 
-        if (postType == PostType.IMAGE
-                || postType == PostType.VIDEO) {
+        if (postType == PostType.MEDIA) {
 
             MediaUploadResponse mediaUploadResponse =
                     mediaService.uploadFile(
@@ -167,10 +165,10 @@ public class PostService {
 
             PostMedia media = PostMedia.builder()
                     .post(post)
-                    .mediaType(
-                            postType == PostType.VIDEO
-                                    ? MediaType.VIDEO
-                                    : MediaType.IMAGE
+                    .mediaType(MediaType.MEDIA
+//                            postType == PostType.VIDEO
+//                                    ? MediaType.VIDEO
+//                                    : MediaType.IMAGE
                     )
                     .cloudinaryUrl(
                             mediaUploadResponse.getUrl()
@@ -248,14 +246,19 @@ public class PostService {
         Post post = postRepository.findByIdAndPostStatus(postId, PostStatus.PUBLISHED)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, post.getAuthor().getId())
-                .orElseThrow(() -> new KnewitException("USER_BLOCKED", "Post owner has been blocked by you.", HttpStatus.BAD_REQUEST));
+        if (viewerId != 0L) {
+            if (userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, post.getAuthor().getId()).isPresent()) {
+                throw new KnewitException("USER_BLOCKED", "Post owner has been blocked by you.", HttpStatus.BAD_REQUEST);
+            }
 
-        userBlockRepository.findByBlocker_IdAndBlocked_Id(post.getAuthor().getId(), viewerId)
-                .orElseThrow(() -> new KnewitException("USER_BLOCKED", "Post owner has blocked you.", HttpStatus.BAD_REQUEST));
+            if (userBlockRepository.findByBlocker_IdAndBlocked_Id(post.getAuthor().getId(), viewerId).isPresent()) {
+                throw new KnewitException("USER_BLOCKED", "Post owner has blocked you.", HttpStatus.BAD_REQUEST);
+            }
 
-        postBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, postId)
-                .orElseThrow(() -> new KnewitException("POST_BLOCKED", "Post has been blocked by you.", HttpStatus.BAD_REQUEST));
+            if (postBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, postId).isPresent()) {
+                throw new KnewitException("POST_BLOCKED", "Post has been blocked by you.", HttpStatus.BAD_REQUEST);
+            }
+        }
 
         return postToPostDto(post, viewerId);
     }
@@ -545,6 +548,7 @@ public class PostService {
                 .body(post.getBody())
                 .subreddit(post.getSubreddit().getName())
                 .authorUsername(post.getAuthor().getUsername())
+                .postStatus(post.getPostStatus().toString().toUpperCase())
                 .build();
     }
 }

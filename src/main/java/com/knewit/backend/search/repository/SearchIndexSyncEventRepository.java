@@ -14,8 +14,8 @@ import java.util.UUID;
 @Repository
 public interface SearchIndexSyncEventRepository extends JpaRepository<SearchIndexSyncEvent, UUID> {
 
-    @Query("SELECT e FROM SearchIndexSyncEvent e WHERE e.status = 'PENDING' AND (e.nextAttemptAt IS NULL OR e.nextAttemptAt <= :now) ORDER BY e.createdAt ASC")
-    List<SearchIndexSyncEvent> findPendingEvents(@Param("now") Instant now);
+//    @Query("SELECT e FROM SearchIndexSyncEvent e WHERE e.status = 'PENDING' AND (e.nextAttemptAt IS NULL OR e.nextAttemptAt <= :now) ORDER BY e.createdAt ASC")
+//    List<SearchIndexSyncEvent> findPendingEvents(@Param("now") LocalDateTime now);
 
     List<SearchIndexSyncEvent> findTop100ByStatusAndNextAttemptAtLessThanEqual(String status, LocalDateTime time);
 }
