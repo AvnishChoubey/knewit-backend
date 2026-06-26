@@ -17,10 +17,12 @@ public class CommentDocument {
     @Field(type = FieldType.Text)
     private String body;
 
+    @Field(type = FieldType.Keyword)
     private String postId;
 
     @Field(type = FieldType.Text)
     private String authorUsername;
 
+    @Field(type = FieldType.Keyword)
     private String contentStatus;
 }

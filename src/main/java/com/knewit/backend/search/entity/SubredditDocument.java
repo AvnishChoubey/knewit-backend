@@ -20,5 +20,6 @@ public class SubredditDocument {
     @Field(type = FieldType.Text)
     private String title;
 
+    @Field(type = FieldType.Keyword)
     private String visibility;
 }

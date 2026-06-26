@@ -103,7 +103,7 @@ public class SearchService {
                     .index(getIndexName("subreddits"))
                     .query(q -> q
                         .bool(b -> b
-                                .must(m -> m
+                                .should(m -> m
                                     .multiMatch(mm -> mm
                                         .fields("name", "title")
                                         .query(query)
@@ -138,7 +138,7 @@ public class SearchService {
                     .index(getIndexName("posts"))
                     .query(q -> q
                         .bool(b -> b
-                            .must(m -> m
+                            .should(m -> m
                                 .multiMatch(mm -> mm
                                     .fields("title", "body", "authorUsername", "subreddit")
                                     .query(query)
@@ -173,7 +173,7 @@ public class SearchService {
                     .index(getIndexName("comments"))
                     .query(q -> q
                         .bool(b -> b
-                            .must(m -> m
+                            .should(m -> m
                                 .multiMatch(mt -> mt
                                     .fields("body", "authorUsername")
                                     .query(query)

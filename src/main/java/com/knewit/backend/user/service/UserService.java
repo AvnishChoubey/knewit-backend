@@ -558,7 +558,10 @@ public class UserService {
     public Page<PostDto> getUserPosts(Long authorId, CustomUserDetails customUserDetails, int page, int size) {
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
 
-        UserBlock userblock = userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, viewerId).orElseThrow(() -> new KnewitException("ALREADY_BLOCKED", "You are blocked", HttpStatus.BAD_REQUEST));
+        Optional<UserBlock> optionalUserblock = userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, viewerId);
+        if (optionalUserblock.isPresent()){
+            throw new KnewitException("ALREADY_BLOCKED", "You are blocked", HttpStatus.BAD_REQUEST);
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -598,6 +601,5 @@ public class UserService {
                 .upvoteCount(post.getUpvoteCount())
                 .commentCount(post.getCommentCount())
                 .build();
-
     }
 }

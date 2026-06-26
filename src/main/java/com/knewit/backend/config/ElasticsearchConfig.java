@@ -9,7 +9,6 @@ import lombok.Data;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.apache.http.auth.AuthScope;
@@ -17,7 +16,6 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 
 @Configuration
-@ConfigurationProperties(prefix = "app.elasticsearch")
 @Data
 public class ElasticsearchConfig {
     @Value("${spring.elasticsearch.uris}")
@@ -37,7 +35,7 @@ public class ElasticsearchConfig {
         BasicCredentialsProvider provider = new BasicCredentialsProvider();
         provider.setCredentials(
                 AuthScope.ANY,
-                new UsernamePasswordCredentials("elastic", password)
+                new UsernamePasswordCredentials(username, password)
         );
 
         RestClient restClient = RestClient.builder(

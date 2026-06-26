@@ -26,5 +26,6 @@ public class PostDocument {
     @Field(type = FieldType.Text)
     private String authorUsername;
 
+    @Field(type = FieldType.Keyword)
     private String postStatus;
 }
