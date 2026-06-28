@@ -99,6 +99,7 @@ public class CommentService {
                     if (viewer == null) return true;
 
                     Long commentAuthorId = comment.getAuthor().getId();
+                    if (viewerId.equals(commentAuthorId)) return true;
 
                     // Viewer blocked the comment author
                     if (userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, commentAuthorId).isPresent()) {
@@ -400,5 +401,18 @@ public class CommentService {
                 .authorUsername(comment.getAuthor().getUsername())
                 .contentStatus(comment.getCommentStatus().toString())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentDto> getUserComments(Long authorId, CustomUserDetails customUserDetails) {
+        Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
+        if (viewerId != 0L && !authorId.equals(viewerId) && userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, viewerId).isPresent()) {
+            throw new KnewitException("ALREADY_BLOCKED", "You are blocked", HttpStatus.BAD_REQUEST);
+        }
+
+        return commentRepository.findByAuthor_IdAndCommentStatusOrderByCreatedAtDesc(authorId, CommentStatus.PUBLISHED)
+                .stream()
+                .map(comment -> commentToCommentDto(comment, viewerId))
+                .toList();
     }
 }

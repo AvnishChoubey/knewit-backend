@@ -250,7 +250,7 @@ public class PostService {
         Post post = postRepository.findByIdAndPostStatus(postId, PostStatus.PUBLISHED)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        if (viewerId != 0L) {
+        if (viewerId != 0L && !viewerId.equals(post.getAuthor().getId())) {
             if (userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, post.getAuthor().getId()).isPresent()) {
                 throw new KnewitException("USER_BLOCKED", "Post owner has been blocked by you.", HttpStatus.BAD_REQUEST);
             }
@@ -273,9 +273,20 @@ public class PostService {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
-        Long authorId = customUserDetails.getUserId();
-        Post post = postRepository.findByIdAndAuthor_Id(postId, authorId)
-                .orElseThrow(() -> new RuntimeException("Post not found or unauthorized"));
+        Long userId = customUserDetails.getUserId();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        boolean isAuthor = post.getAuthor().getId().equals(userId);
+        boolean isModerator = false;
+        if (post.getSubreddit() != null) {
+            isModerator = subredditMemberRepository
+                    .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(post.getSubreddit().getId(), userId);
+        }
+
+        if (!isAuthor && !isModerator) {
+            throw new KnewitException("UNAUTHORIZED_USER", "You are not authorized to delete this post", HttpStatus.UNAUTHORIZED);
+        }
 
         post.setPostStatus(PostStatus.ARCHIVED);
 
@@ -398,7 +409,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostDto> getFeed(Long viewerId, int page, int size, String sort, String feedType) {
+    public Page<PostDto> getFeed(Long viewerId, int page, int size, String sort, String feedType, Long cursor) {
 
         FeedSort feedSort =
                 FeedSort.valueOf(
@@ -406,46 +417,47 @@ public class PostService {
                 );
 
         Pageable pageable;
+        int queryPage = (cursor != null && cursor > 0) ? 0 : page;
 
         switch (feedSort) {
 
             case TOP -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "scoreTop"
+                                     Sort.Direction.DESC,
+                                     "scoreTop"
                             )
                     );
 
             case HOT -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "scoreHot"
+                                     Sort.Direction.DESC,
+                                     "scoreHot"
                             )
                     );
 
             case RISING -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "scoreRising"
+                                     Sort.Direction.DESC,
+                                     "scoreRising"
                             )
                     );
 
             default -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "createdAt"
+                                     Sort.Direction.DESC,
+                                     "createdAt"
                             )
                     );
         }
@@ -459,12 +471,24 @@ public class PostService {
                     .collect(Collectors.toList());
 
             if (!joinedSubredditIds.isEmpty()) {
-                posts = postRepository.findBySubreddit_IdInAndPostStatus(joinedSubredditIds, PostStatus.PUBLISHED, pageable);
+                if (cursor != null && cursor > 0) {
+                    posts = postRepository.findBySubreddit_IdInAndPostStatusAndIdLessThan(joinedSubredditIds, PostStatus.PUBLISHED, cursor, pageable);
+                } else {
+                    posts = postRepository.findBySubreddit_IdInAndPostStatus(joinedSubredditIds, PostStatus.PUBLISHED, pageable);
+                }
+            } else {
+                if (cursor != null && cursor > 0) {
+                    posts = postRepository.findByPostStatusAndIdLessThan(PostStatus.PUBLISHED, cursor, pageable);
+                } else {
+                    posts = postRepository.findByPostStatus(PostStatus.PUBLISHED, pageable);
+                }
+            }
+        } else {
+            if (cursor != null && cursor > 0) {
+                posts = postRepository.findByPostStatusAndIdLessThan(PostStatus.PUBLISHED, cursor, pageable);
             } else {
                 posts = postRepository.findByPostStatus(PostStatus.PUBLISHED, pageable);
             }
-        } else {
-            posts = postRepository.findByPostStatus(PostStatus.PUBLISHED, pageable);
         }
 
         return posts.map(post ->

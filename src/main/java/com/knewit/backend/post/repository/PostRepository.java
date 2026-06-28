@@ -76,7 +76,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable
     );
 
-    @Query("SELECT COALESCE(SUM(p.upvoteCount - p.downvoteCount), 0) FROM Post p WHERE p.author.id = :authorId AND p.postStatus = com.knewit.backend.post.enums.PostStatus.PUBLISHED")
+    @Query("SELECT COALESCE(SUM(COALESCE(p.upvoteCount, 0) - COALESCE(p.downvoteCount, 0)), 0) FROM Post p WHERE p.author.id = :authorId AND p.postStatus = com.knewit.backend.post.enums.PostStatus.PUBLISHED")
     long sumPostScoreByAuthorId(@Param("authorId") Long authorId);
 
     long countByAuthor_IdAndPostStatus(Long authorId, PostStatus postStatus);
@@ -84,6 +84,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findBySubreddit_IdInAndPostStatus(
             List<Long> subredditIds,
             PostStatus postStatus,
+            Pageable pageable
+    );
+
+    Page<Post> findByPostStatusAndIdLessThan(
+            PostStatus postStatus,
+            Long id,
+            Pageable pageable
+    );
+
+    Page<Post> findBySubreddit_IdInAndPostStatusAndIdLessThan(
+            List<Long> subredditIds,
+            PostStatus postStatus,
+            Long id,
             Pageable pageable
     );
 }

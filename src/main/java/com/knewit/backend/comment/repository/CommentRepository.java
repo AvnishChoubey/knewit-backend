@@ -17,11 +17,13 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findAllByParentComment_IdAndCommentStatus(Long parentCommentId, CommentStatus commentStatus);
     List<Comment> findAllByPost_IdAndParentCommentIsNullAndCommentStatus(Long postId, CommentStatus commentStatus);
 
-    @Query("SELECT COALESCE(SUM(c.upvoteCount - c.downvoteCount), 0) FROM Comment c WHERE c.author.id = :authorId AND c.commentStatus = com.knewit.backend.comment.enums.CommentStatus.PUBLISHED")
+    @Query("SELECT COALESCE(SUM(COALESCE(c.upvoteCount, 0) - COALESCE(c.downvoteCount, 0)), 0) FROM Comment c WHERE c.author.id = :authorId AND c.commentStatus = com.knewit.backend.comment.enums.CommentStatus.PUBLISHED")
     long sumCommentScoreByAuthorId(@Param("authorId") Long authorId);
 
     int countByAuthor_IdAndCommentStatus(Long id, CommentStatus commentStatus);
 
     @Query("SELECT c FROM Comment c WHERE c.commentStatus = com.knewit.backend.comment.enums.CommentStatus.PUBLISHED AND LOWER(c.body) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<Comment> searchCommentsFallback(@Param("query") String query);
+
+    List<Comment> findByAuthor_IdAndCommentStatusOrderByCreatedAtDesc(Long authorId, CommentStatus commentStatus);
 }

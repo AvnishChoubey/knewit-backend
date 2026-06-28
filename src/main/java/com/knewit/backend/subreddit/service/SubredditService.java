@@ -442,13 +442,6 @@ public class SubredditService {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
-        Long moderatorId = customUserDetails.getUserId();
-
-        validateModerator(
-                subredditId,
-                moderatorId
-        );
-
         return memberRepository
                 .findBySubreddit_Id(
                         subredditId
@@ -917,6 +910,8 @@ public class SubredditService {
                 .postingPolicy(subreddit.getPostingPolicy().name())
                 .iconUrl(subreddit.getIconUrl())
                 .iconPublicId(subreddit.getIconPublicId())
+                .bannerUrl(subreddit.getBannerUrl())
+                .bannerPublicId(subreddit.getBannerPublicId())
                 .creatorUsername(subreddit.getCreator().getUsername())
                 .memberCount(subreddit.getMemberCount())
                 .postCount(subreddit.getPostCount())

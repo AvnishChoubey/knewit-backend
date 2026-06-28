@@ -87,7 +87,8 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "HOT") String sort,
-            @RequestParam(defaultValue = "HOME") String feedType
+            @RequestParam(defaultValue = "HOME") String feedType,
+            @RequestParam(required = false) Long cursor
     ) {
 
         return ResponseEntity.ok(
@@ -96,7 +97,8 @@ public class PostController {
                         page,
                         size,
                         sort,
-                        feedType
+                        feedType,
+                        cursor
                 )
         );
     }

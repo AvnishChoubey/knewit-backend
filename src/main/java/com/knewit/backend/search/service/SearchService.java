@@ -69,6 +69,7 @@ public class SearchService {
         }
     }
 
+    @Transactional(readOnly = true)
     public SearchResponseDto search(String query) {
         try {
             elasticsearchClient.ping();
