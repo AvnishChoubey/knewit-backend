@@ -1091,6 +1091,7 @@ public class SubredditService {
                 .id(subreddit.getId().toString())
                 .name(subreddit.getName())
                 .title(subreddit.getTitle())
+                .topic(subreddit.getTopic().toString())
                 .visibility(subreddit.getVisibility().toString().toUpperCase())
                 .build();
     }

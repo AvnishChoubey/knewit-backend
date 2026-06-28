@@ -11,26 +11,28 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Value("${app.websocket.endpoint-path:/ws}")
+    @Value("${spring.app.websocket.endpoint-path}")
     private String endpointPath;
 
-    @Value("${app.websocket.broker-prefix:/app}")
+    @Value("${spring.app.websocket.broker-prefix}")
     private String brokerPrefix;
 
-    @Value("${app.websocket.topic-prefix:/topic}")
+    @Value("${spring.app.websocket.topic-prefix}")
     private String topicPrefix;
 
-    @Value("${app.websocket.queue-prefix:/queue}")
+    @Value("${spring.app.websocket.queue-prefix}")
     private String queuePrefix;
 
-    @Value("${app.websocket.allowed-origins:http://localhost:5173}")
+    @Value("${spring.app.websocket.allowed-origins}")
     private String allowedOrigins;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint(endpointPath)
-                .setAllowedOrigins(allowedOrigins.split(","))
-                .withSockJS();
+        // POSTMAN testing
+        registry.addEndpoint(endpointPath).setAllowedOrigins("*");
+
+        // production
+        registry.addEndpoint(endpointPath).setAllowedOrigins(allowedOrigins.split(","));
     }
 
     @Override

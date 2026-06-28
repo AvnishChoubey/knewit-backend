@@ -24,7 +24,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
-//    @Autowired private UserService userService;
 
     @Override
     public void onAuthenticationSuccess(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, Authentication authentication) throws IOException {
@@ -48,7 +47,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         if(user.getProfileCompletedAt() == null) {
             response.sendRedirect(frontendUrl + "/complete-profile");
         } else {
-            response.sendRedirect( "http://localhost:8080/api/v1/feed");
+            response.sendRedirect(frontendUrl + "/feed");
         }
     }
 }

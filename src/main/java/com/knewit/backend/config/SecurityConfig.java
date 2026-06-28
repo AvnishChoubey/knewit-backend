@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**").permitAll()
                         // USERS
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/me").hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/user/").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/*/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/*/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/user/**").hasRole("USER")
@@ -44,21 +44,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/user/**").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/user/**").hasRole("USER")
                         // COMMENTS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/posts/*/comments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/posts/*/comments/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/posts/*/comments/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/posts/*/comments/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/*/comments/**").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/*/comments/**").hasRole("USER")
                         // POSTS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/posts/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/posts/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/**").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/**").hasRole("USER")
                         // SUBREDDITS
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/*/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/subreddits/*/**").hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/subreddits").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/subreddits/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/subreddits/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/subreddits/**").hasRole("USER")
@@ -67,7 +69,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/search").permitAll()
                         // CHAT
                         .requestMatchers("/api/v1/chat").hasRole("USER")
-                        .requestMatchers("/api/v1/chat/*/**").hasRole("USER")
                         .requestMatchers("/api/v1/chat/**").hasRole("USER")
                         .anyRequest().authenticated())
 

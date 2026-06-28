@@ -18,6 +18,7 @@ import java.util.UUID;
 public class SearchIndexSyncEvent {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "entity_type", nullable = false, length = 50)

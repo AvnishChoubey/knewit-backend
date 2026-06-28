@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -81,8 +80,6 @@ public class SearchService {
                             .field("username")
                             .query(query)
                                 .fuzziness("AUTO")
-                                .prefixLength(3)
-                                .maxExpansions(50)
                         )
                     ), UserDocument.class);
 
@@ -103,13 +100,11 @@ public class SearchService {
                     .index(getIndexName("subreddits"))
                     .query(q -> q
                         .bool(b -> b
-                                .should(m -> m
+                                .must(m -> m
                                     .multiMatch(mm -> mm
-                                        .fields("name", "title")
+                                        .fields("name", "title", "topic")
                                         .query(query)
                                             .fuzziness("AUTO")
-                                            .prefixLength(3)
-                                            .maxExpansions(50)
                                 )
                             )
                             .filter(f -> f
@@ -138,13 +133,11 @@ public class SearchService {
                     .index(getIndexName("posts"))
                     .query(q -> q
                         .bool(b -> b
-                            .should(m -> m
+                            .must(m -> m
                                 .multiMatch(mm -> mm
-                                    .fields("title", "body", "authorUsername", "subreddit")
+                                    .fields("title", "body")
                                     .query(query)
                                         .fuzziness("AUTO")
-                                        .prefixLength(3)
-                                        .maxExpansions(50)
                                 )
                             )
                             .filter(f -> f
@@ -171,25 +164,23 @@ public class SearchService {
             try {
                 SearchResponse<CommentDocument> commentResponse = elasticsearchClient.search(s -> s
                     .index(getIndexName("comments"))
-                    .query(q -> q
-                        .bool(b -> b
-                            .should(m -> m
-                                .multiMatch(mt -> mt
-                                    .fields("body", "authorUsername")
-                                    .query(query)
+                        .query(q -> q
+                            .bool(b -> b
+                                .must(m -> m
+                                    .match(mt -> mt
+                                        .field("body")
+                                        .query(query)
                                         .fuzziness("AUTO")
-                                        .prefixLength(3)
-                                        .maxExpansions(50)
+                                    )
+                                )
+                                .filter(f -> f
+                                    .term(t -> t
+                                            .field("contentStatus")
+                                            .value("PUBLISHED")
+                                    )
                                 )
                             )
-                            .filter(f -> f
-                                .term(t -> t
-                                    .field("contentStatus")
-                                    .value("PUBLISHED")
-                                )
-                            )
-                        )
-                    ), CommentDocument.class);
+                        ), CommentDocument.class);
 
                 for (Hit<CommentDocument> hit : commentResponse.hits().hits()) {
                     CommentDocument doc = hit.source();
@@ -215,7 +206,6 @@ public class SearchService {
         try {
             String jsonPayload = objectMapper.writeValueAsString(payload);
             SearchIndexSyncEvent event = SearchIndexSyncEvent.builder()
-                    .id(UUID.randomUUID())
                     .entityType(entityType)
                     .entityId(entityId)
                     .operation(operation)
@@ -232,8 +222,7 @@ public class SearchService {
 
     public void processSyncEvent(SearchIndexSyncEvent event) throws Exception {
 
-        String indexName =
-                getIndexName(event.getEntityType().toLowerCase() + "s");
+        String indexName = getIndexName(event.getEntityType().toLowerCase() + "s");
 
         if ("DELETE".equalsIgnoreCase(event.getOperation())) {
 
@@ -248,8 +237,7 @@ public class SearchService {
         switch (event.getEntityType().toUpperCase()) {
 
             case "USER" -> {
-                UserDocument doc =
-                        objectMapper.readValue(event.getPayload(), UserDocument.class);
+                UserDocument doc = objectMapper.readValue(event.getPayload(), UserDocument.class);
 
                 elasticsearchClient.index(i -> i
                         .index(indexName)
@@ -259,8 +247,7 @@ public class SearchService {
             }
 
             case "POST" -> {
-                PostDocument doc =
-                        objectMapper.readValue(event.getPayload(), PostDocument.class);
+                PostDocument doc = objectMapper.readValue(event.getPayload(), PostDocument.class);
 
                 elasticsearchClient.index(i -> i
                         .index(indexName)
@@ -270,8 +257,7 @@ public class SearchService {
             }
 
             case "SUBREDDIT" -> {
-                SubredditDocument doc =
-                        objectMapper.readValue(event.getPayload(), SubredditDocument.class);
+                SubredditDocument doc = objectMapper.readValue(event.getPayload(), SubredditDocument.class);
 
                 elasticsearchClient.index(i -> i
                         .index(indexName)
@@ -281,8 +267,7 @@ public class SearchService {
             }
 
             case "COMMENT" -> {
-                CommentDocument doc =
-                        objectMapper.readValue(event.getPayload(), CommentDocument.class);
+                CommentDocument doc = objectMapper.readValue(event.getPayload(), CommentDocument.class);
 
                 elasticsearchClient.index(i -> i
                         .index(indexName)

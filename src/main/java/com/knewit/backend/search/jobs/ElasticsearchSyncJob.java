@@ -52,9 +52,7 @@ public class ElasticsearchSyncJob {
                     if (event.getAttemptCount() >= 5) {
                         event.setStatus("FAILED");
                     } else {
-                        event.setNextAttemptAt(
-                                LocalDateTime.now().plusSeconds(60L * event.getAttemptCount())
-                        );
+                        event.setNextAttemptAt(LocalDateTime.now().plusSeconds(60L * event.getAttemptCount()));
                     }
                 }
 

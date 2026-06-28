@@ -38,7 +38,7 @@ public class ChatController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<ConversationDto>> getConversations(
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
