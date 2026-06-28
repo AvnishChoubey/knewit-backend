@@ -4,16 +4,20 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.knewit.backend.common.exception.KnewitException;
 import com.knewit.backend.config.ElasticsearchConfig;
 import com.knewit.backend.search.dto.SearchResponseDto;
 import com.knewit.backend.search.entity.*;
 import com.knewit.backend.search.repository.SearchIndexSyncEventRepository;
+import com.knewit.backend.auth.repository.UserRepository;
+import com.knewit.backend.subreddit.repository.SubredditRepository;
+import com.knewit.backend.post.repository.PostRepository;
+import com.knewit.backend.comment.repository.CommentRepository;
+import org.springframework.data.domain.PageRequest;
+import java.util.stream.Collectors;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +35,10 @@ public class SearchService {
     @Autowired private ElasticsearchConfig elasticsearchConfig;
     @Autowired private SearchIndexSyncEventRepository outboxRepository;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private SubredditRepository subredditRepository;
+    @Autowired private PostRepository postRepository;
+    @Autowired private CommentRepository commentRepository;
 
     private String getIndexName(String suffix) {
         String prefix = elasticsearchConfig.getIndexPrefix();
@@ -65,22 +73,25 @@ public class SearchService {
         try {
             elasticsearchClient.ping();
         } catch (Exception e) {
-            log.error("Elasticsearch ping failed", e);
-            throw new KnewitException("SEARCH_UNAVAILABLE", "Elasticsearch cluster is unavailable", HttpStatus.SERVICE_UNAVAILABLE);
+            log.warn("Elasticsearch ping failed, falling back to database search. Error: {}", e.getMessage());
+            return searchDbFallback(query);
         }
+
+        // wildcard needs lowercase to match against lowercased field values
+        String wildcardQuery = "*" + query.toLowerCase() + "*";
 
         try {
             // 1. Search Users
             List<SearchResponseDto.UserResultDto> users = new ArrayList<>();
             try {
                 SearchResponse<UserDocument> userResponse = elasticsearchClient.search(s -> s
-                    .index(getIndexName("users"))
-                    .query(q -> q
-                        .match(m -> m
-                            .field("username")
-                            .query(query)
-                        )
-                    ), UserDocument.class);
+                        .index(getIndexName("users"))
+                        .query(q -> q
+                                .wildcard(w -> w
+                                        .field("username")
+                                        .value(wildcardQuery)
+                                )
+                        ), UserDocument.class);
 
                 for (Hit<UserDocument> hit : userResponse.hits().hits()) {
                     UserDocument doc = hit.source();
@@ -96,28 +107,39 @@ public class SearchService {
             List<SearchResponseDto.SubredditResultDto> subreddits = new ArrayList<>();
             try {
                 SearchResponse<SubredditDocument> subredditResponse = elasticsearchClient.search(s -> s
-                    .index(getIndexName("subreddits"))
-                    .query(q -> q
-                        .bool(b -> b
-                            .must(m -> m
-                                .multiMatch(mm -> mm
-                                    .fields("name", "title")
-                                    .query(query)
+                        .index(getIndexName("subreddits"))
+                        .query(q -> q
+                                .bool(b -> b
+                                        .must(m -> m
+                                                .bool(inner -> inner
+                                                        .should(sh -> sh
+                                                                .wildcard(w -> w
+                                                                        .field("name")
+                                                                        .value(wildcardQuery)
+                                                                )
+                                                        )
+                                                        .should(sh -> sh
+                                                                .wildcard(w -> w
+                                                                        .field("title")
+                                                                        .value(wildcardQuery)
+                                                                )
+                                                        )
+                                                        .minimumShouldMatch("1")
+                                                )
+                                        )
+                                        .filter(f -> f
+                                                .term(t -> t
+                                                        .field("visibility")
+                                                        .value("PUBLIC")
+                                                )
+                                        )
                                 )
-                            )
-                            .filter(f -> f
-                                .term(t -> t
-                                    .field("visibility")
-                                    .value("PUBLIC")
-                                )
-                            )
-                        )
-                    ), SubredditDocument.class);
+                        ), SubredditDocument.class);
 
                 for (Hit<SubredditDocument> hit : subredditResponse.hits().hits()) {
                     SubredditDocument doc = hit.source();
                     if (doc != null) {
-                        subreddits.add(new SearchResponseDto.SubredditResultDto(doc.getTitle()));
+                        subreddits.add(new SearchResponseDto.SubredditResultDto(doc.getName()));
                     }
                 }
             } catch (Exception e) {
@@ -128,29 +150,40 @@ public class SearchService {
             List<SearchResponseDto.PostResultDto> posts = new ArrayList<>();
             try {
                 SearchResponse<PostDocument> postResponse = elasticsearchClient.search(s -> s
-                    .index(getIndexName("posts"))
-                    .query(q -> q
-                        .bool(b -> b
-                            .must(m -> m
-                                .multiMatch(mm -> mm
-                                    .fields("title", "body")
-                                    .query(query)
+                        .index(getIndexName("posts"))
+                        .query(q -> q
+                                .bool(b -> b
+                                        .must(m -> m
+                                                .bool(inner -> inner
+                                                        .should(sh -> sh
+                                                                .wildcard(w -> w
+                                                                        .field("title")
+                                                                        .value(wildcardQuery)
+                                                                )
+                                                        )
+                                                        .should(sh -> sh
+                                                                .wildcard(w -> w
+                                                                        .field("body")
+                                                                        .value(wildcardQuery)
+                                                                )
+                                                        )
+                                                        .minimumShouldMatch("1")
+                                                )
+                                        )
+                                        .filter(f -> f
+                                                .term(t -> t
+                                                        .field("postStatus")
+                                                        .value("PUBLISHED")
+                                                )
+                                        )
+                                        .filter(f -> f
+                                                .term(t -> t
+                                                        .field("visibility")
+                                                        .value("PUBLIC")
+                                                )
+                                        )
                                 )
-                            )
-                            .filter(f -> f
-                                .term(t -> t
-                                    .field("postStatus")
-                                    .value("PUBLISHED")
-                                )
-                            )
-                            .filter(f -> f
-                                .term(t -> t
-                                    .field("visibility")
-                                    .value("PUBLIC")
-                                )
-                            )
-                        )
-                    ), PostDocument.class);
+                        ), PostDocument.class);
 
                 for (Hit<PostDocument> hit : postResponse.hits().hits()) {
                     PostDocument doc = hit.source();
@@ -166,23 +199,23 @@ public class SearchService {
             List<SearchResponseDto.CommentResultDto> comments = new ArrayList<>();
             try {
                 SearchResponse<CommentDocument> commentResponse = elasticsearchClient.search(s -> s
-                    .index(getIndexName("comments"))
-                    .query(q -> q
-                        .bool(b -> b
-                            .must(m -> m
-                                .match(mt -> mt
-                                    .field("body")
-                                    .query(query)
+                        .index(getIndexName("comments"))
+                        .query(q -> q
+                                .bool(b -> b
+                                        .must(m -> m
+                                                .wildcard(w -> w
+                                                        .field("body")
+                                                        .value(wildcardQuery)
+                                                )
+                                        )
+                                        .filter(f -> f
+                                                .term(t -> t
+                                                        .field("contentStatus")
+                                                        .value("PUBLISHED")
+                                                )
+                                        )
                                 )
-                            )
-                            .filter(f -> f
-                                .term(t -> t
-                                    .field("contentStatus")
-                                    .value("PUBLISHED")
-                                )
-                            )
-                        )
-                    ), CommentDocument.class);
+                        ), CommentDocument.class);
 
                 for (Hit<CommentDocument> hit : commentResponse.hits().hits()) {
                     CommentDocument doc = hit.source();
@@ -198,13 +231,60 @@ public class SearchService {
             return new SearchResponseDto(query, results);
 
         } catch (Exception e) {
-            log.error("Search request failed", e);
-            throw new KnewitException("SEARCH_UNAVAILABLE", "Elasticsearch cluster is unavailable", HttpStatus.SERVICE_UNAVAILABLE);
+            log.warn("Search request failed, falling back to database search. Error: {}", e.getMessage());
+            return searchDbFallback(query);
         }
     }
 
+    private SearchResponseDto searchDbFallback(String query) {
+        log.info("Executing database fallback search for query: {}", query);
+
+        // 1. Search Users
+        List<SearchResponseDto.UserResultDto> users = userRepository.searchUsersFallback(query).stream()
+                .map(u -> new SearchResponseDto.UserResultDto(u.getUsername()))
+                .limit(20)
+                .collect(Collectors.toList());
+
+        // 2. Search Subreddits
+        List<SearchResponseDto.SubredditResultDto> subreddits = subredditRepository.searchSubredditsFallback(query).stream()
+                .map(s -> new SearchResponseDto.SubredditResultDto(s.getName()))
+                .limit(20)
+                .collect(Collectors.toList());
+
+        // 3. Search Posts
+        org.springframework.data.domain.Page<com.knewit.backend.post.entity.Post> postPage =
+                postRepository.searchPosts(query, com.knewit.backend.post.enums.PostStatus.PUBLISHED, PageRequest.of(0, 20));
+
+        List<SearchResponseDto.PostResultDto> posts = postPage.getContent().stream()
+                .filter(p -> p.getSubreddit() != null && p.getSubreddit().getVisibility() == com.knewit.backend.subreddit.enums.Visibility.PUBLIC)
+                .map(p -> new SearchResponseDto.PostResultDto(
+                        p.getId().toString(),
+                        p.getTitle(),
+                        p.getAuthor() != null ? p.getAuthor().getUsername() : "anonymous"
+                ))
+                .collect(Collectors.toList());
+
+        // 4. Search Comments
+        List<SearchResponseDto.CommentResultDto> comments = commentRepository.searchCommentsFallback(query).stream()
+                .filter(c -> c.getPost() != null
+                        && c.getPost().getPostStatus() == com.knewit.backend.post.enums.PostStatus.PUBLISHED
+                        && c.getPost().getSubreddit() != null
+                        && c.getPost().getSubreddit().getVisibility() == com.knewit.backend.subreddit.enums.Visibility.PUBLIC)
+                .map(c -> new SearchResponseDto.CommentResultDto(
+                        c.getId().toString(),
+                        c.getBody(),
+                        c.getPost().getId().toString(),
+                        c.getAuthor() != null ? c.getAuthor().getUsername() : "anonymous"
+                ))
+                .limit(20)
+                .collect(Collectors.toList());
+
+        SearchResponseDto.ResultsDto results = new SearchResponseDto.ResultsDto(users, subreddits, posts, comments);
+        return new SearchResponseDto(query, results);
+    }
+
     @Transactional
-    public void enqueueSyncEvent(String entityType, Long entityId, String operation, Object payload) {
+    public void enqueueSyncEvent(String entityType, String entityId, String operation, Object payload) {
         try {
             String jsonPayload = objectMapper.writeValueAsString(payload);
             SearchIndexSyncEvent event = SearchIndexSyncEvent.builder()
@@ -224,25 +304,20 @@ public class SearchService {
 
     public void processSyncEvent(SearchIndexSyncEvent event) throws Exception {
 
-        String indexName =
-                getIndexName(event.getEntityType().toLowerCase() + "s");
+        String indexName = getIndexName(event.getEntityType().toLowerCase() + "s");
 
         if ("DELETE".equalsIgnoreCase(event.getOperation())) {
-
             elasticsearchClient.delete(d -> d
                     .index(indexName)
-                    .id(event.getEntityId().toString())
+                    .id(event.getEntityId())
             );
-
             return;
         }
 
         switch (event.getEntityType().toUpperCase()) {
 
             case "USER" -> {
-                UserDocument doc =
-                        objectMapper.readValue(event.getPayload(), UserDocument.class);
-
+                UserDocument doc = objectMapper.readValue(event.getPayload(), UserDocument.class);
                 elasticsearchClient.index(i -> i
                         .index(indexName)
                         .id(doc.getId())
@@ -251,9 +326,7 @@ public class SearchService {
             }
 
             case "POST" -> {
-                PostDocument doc =
-                        objectMapper.readValue(event.getPayload(), PostDocument.class);
-
+                PostDocument doc = objectMapper.readValue(event.getPayload(), PostDocument.class);
                 elasticsearchClient.index(i -> i
                         .index(indexName)
                         .id(doc.getId())
@@ -262,9 +335,7 @@ public class SearchService {
             }
 
             case "SUBREDDIT" -> {
-                SubredditDocument doc =
-                        objectMapper.readValue(event.getPayload(), SubredditDocument.class);
-
+                SubredditDocument doc = objectMapper.readValue(event.getPayload(), SubredditDocument.class);
                 elasticsearchClient.index(i -> i
                         .index(indexName)
                         .id(doc.getId())
@@ -273,9 +344,7 @@ public class SearchService {
             }
 
             case "COMMENT" -> {
-                CommentDocument doc =
-                        objectMapper.readValue(event.getPayload(), CommentDocument.class);
-
+                CommentDocument doc = objectMapper.readValue(event.getPayload(), CommentDocument.class);
                 elasticsearchClient.index(i -> i
                         .index(indexName)
                         .id(doc.getId())

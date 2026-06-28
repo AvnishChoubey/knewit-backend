@@ -69,22 +69,22 @@ public class UserService {
     public UserProfileDto updateMyProfile(Long userId, UpdateMyProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
-        
+
         if(request.getBio() != null) user.setBio(request.getBio());
         if(request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
         if(request.getAvatarPublicId() != null) user.setAvatarPublicId(request.getAvatarPublicId());
-        
+
         userRepository.save(user);
 
         if(request.getInterests() != null) {
             userInterestRepository.deleteAllByUser_Id(userId);
-            
+
             for(Topic interest : request.getInterests()) {
                 UserInterest userInterest = UserInterest.builder()
                         .user(user)
                         .interest(interest)
                         .build();
-                
+
                 userInterestRepository.save(userInterest);
             }
         }
@@ -123,7 +123,7 @@ public class UserService {
 
         return new GetPublicUserResponse(profileDto, isFollowing, isBlocked, isBlockedByViewer);
     }
-    
+
     /* SAVE FEATURE METHODS */
 
     public Map<?, ?> getAllSaves(CustomUserDetails customUserDetails, Long saverId) {
@@ -133,7 +133,7 @@ public class UserService {
         if(saver.getId() != customUserDetails.getUserId()) {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
-        
+
         List<PostSave> postsaves = postSaveRepository.findAllBySaver(saver);
         List<CommentSave> commentsaves = commentSaveRepository.findAllBySaver(saver);
 

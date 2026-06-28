@@ -21,6 +21,8 @@ public class UserProfileDto {
     private List<Topic> interests;
     private long followersCount;
     private long followingCount;
+    private long karma;
+    private long contributions;
     private String createdAt;
     private String updatedAt;
 }

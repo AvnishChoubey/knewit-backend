@@ -115,7 +115,7 @@ public class SubredditService {
         memberRepository.save(creatorMember);
 
         SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
-        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "CREATE", subredditDocument);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId().toString(), "CREATE", subredditDocument);
 
         return subredditToSubredditDto(subreddit);
     }
@@ -758,7 +758,7 @@ public class SubredditService {
         subredditRepository.save(subreddit);
 
         SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
-        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "UPDATE", subredditDocument);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId().toString(), "UPDATE", subredditDocument);
 
         return subredditToSubredditDto(subreddit);
     }

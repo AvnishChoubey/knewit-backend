@@ -18,6 +18,8 @@ import com.knewit.backend.post.entity.Post;
 import com.knewit.backend.post.repository.PostRepository;
 import com.knewit.backend.search.entity.CommentDocument;
 import com.knewit.backend.search.service.SearchService;
+import com.knewit.backend.user.repository.UserBlockRepository;
+import com.knewit.backend.comment.repository.CommentBlockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,6 +43,8 @@ public class CommentService {
     private final UserRepository userRepository;
 
     private final CommentSaveRepository commentSaveRepository;
+    @Autowired private UserBlockRepository userBlockRepository;
+    @Autowired private CommentBlockRepository commentBlockRepository;
 
     private CommentDto commentToCommentDto(Comment comment, Long viewerId) {
 
@@ -84,8 +88,35 @@ public class CommentService {
     public List<CommentDto> getCommentsForPost(CustomUserDetails customUserDetails, Long postId) {
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
 
+        // Resolve viewer entity once for CommentBlockRepository calls (needs User object)
+        User viewer = (viewerId != null && viewerId != 0L)
+                ? userRepository.findById(viewerId).orElse(null)
+                : null;
+
         return commentRepository.findAllByPost_IdAndCommentStatus(postId, CommentStatus.PUBLISHED)
                 .stream()
+                .filter(comment -> {
+                    if (viewer == null) return true;
+
+                    Long commentAuthorId = comment.getAuthor().getId();
+
+                    // Viewer blocked the comment author
+                    if (userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, commentAuthorId).isPresent()) {
+                        return false;
+                    }
+
+                    // Comment author blocked the viewer
+                    if (userBlockRepository.findByBlocker_IdAndBlocked_Id(commentAuthorId, viewerId).isPresent()) {
+                        return false;
+                    }
+
+                    // Viewer blocked the comment itself
+                    if (commentBlockRepository.findByBlockerAndBlocked(viewer, comment).isPresent()) {
+                        return false;
+                    }
+
+                    return true;
+                })
                 .map(comment -> commentToCommentDto(comment, viewerId))
                 .toList();
     }
@@ -221,7 +252,7 @@ public class CommentService {
 
         CommentDocument commentDocument = commentToCommentDocument(comment);
 
-        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "UPDATE", commentDocument);
+        searchService.enqueueSyncEvent("COMMENT", comment.getId().toString(), "UPDATE", commentDocument);
 
         return commentToCommentDto(comment, userId);
     }
@@ -240,7 +271,7 @@ public class CommentService {
                     .contentStatus(child.getCommentStatus().toString())
                     .build();
 
-            searchService.enqueueSyncEvent("COMMENT", child.getId(), "DELETE", commentDocument);
+            searchService.enqueueSyncEvent("COMMENT", child.getId().toString(), "DELETE", commentDocument);
             softDeleteChildren(child.getId());
         }
     }
@@ -265,7 +296,7 @@ public class CommentService {
 
         CommentDocument commentDocument = commentToCommentDocument(comment);
 
-        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "DELETE", commentDocument);
+        searchService.enqueueSyncEvent("COMMENT", comment.getId().toString(), "DELETE", commentDocument);
 
         softDeleteChildren(comment.getId());
     }
@@ -285,6 +316,16 @@ public class CommentService {
         User author = userRepository.findById(authorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Ban rules: check blocks between commenter and post author
+        Long postAuthorId = post.getAuthor().getId();
+        if (!postAuthorId.equals(authorId)) {
+            if (userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, postAuthorId).isPresent()) {
+                throw new KnewitException("USER_BLOCKED", "You have blocked the post owner.", HttpStatus.BAD_REQUEST);
+            }
+            if (userBlockRepository.findByBlocker_IdAndBlocked_Id(postAuthorId, authorId).isPresent()) {
+                throw new KnewitException("USER_BLOCKED", "The post owner has blocked you.", HttpStatus.BAD_REQUEST);
+            }
+        }
 
         Comment parentComment = null;
 
@@ -297,6 +338,17 @@ public class CommentService {
 
             if (!parentComment.getPost().getId().equals(postId)) {
                 throw new RuntimeException("Parent comment belongs to another post");
+            }
+
+            // Ban rules: check blocks between commenter and parent comment author
+            Long parentCommentAuthorId = parentComment.getAuthor().getId();
+            if (!parentCommentAuthorId.equals(authorId)) {
+                if (userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, parentCommentAuthorId).isPresent()) {
+                    throw new KnewitException("USER_BLOCKED", "You have blocked the parent comment owner.", HttpStatus.BAD_REQUEST);
+                }
+                if (userBlockRepository.findByBlocker_IdAndBlocked_Id(parentCommentAuthorId, authorId).isPresent()) {
+                    throw new KnewitException("USER_BLOCKED", "The parent comment owner has blocked you.", HttpStatus.BAD_REQUEST);
+                }
             }
 
             depth = parentComment.getDepthLevel() + 1;
@@ -323,13 +375,13 @@ public class CommentService {
 
         CommentDocument commentDocument = commentToCommentDocument(comment);
 
-        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "CREATE", commentDocument);
+        searchService.enqueueSyncEvent("COMMENT", comment.getId().toString(), "CREATE", commentDocument);
 
         CommentVote selfVote = CommentVote.builder()
-                        .comment(comment)
-                        .user(author)
-                        .voteType(VoteType.UPVOTE)
-                        .build();
+                .comment(comment)
+                .user(author)
+                .voteType(VoteType.UPVOTE)
+                .build();
 
         commentVoteRepository.save(selfVote);
 

@@ -28,11 +28,21 @@ public class UserController {
         return ResponseEntity.ok(userService.getMe(customUserDetails));
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<GetPublicUserResponse> getPublicUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
                                                                @RequestParam("username") String username) {
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L; // Dummy viewer if anonymous
         return ResponseEntity.ok(userService.getPublicUser(viewerId, username));
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserProfileDto> updateMyProfile(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                          @PathVariable("userId") Long userId,
+                                                          @RequestBody UpdateMyProfileRequest request) {
+        if (customUserDetails == null || !customUserDetails.getUserId().equals(userId)) {
+            throw new com.knewit.backend.common.exception.KnewitException("UNAUTHORIZED_USER", "Unauthorized user", org.springframework.http.HttpStatus.UNAUTHORIZED);
+        }
+        return ResponseEntity.ok(userService.updateMyProfile(userId, request));
     }
 
     /* SUBREDDIT APIS */
