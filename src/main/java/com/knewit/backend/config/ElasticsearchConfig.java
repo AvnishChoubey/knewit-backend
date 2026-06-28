@@ -7,6 +7,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.apache.http.HttpHost;
+import org.apache.http.client.CredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,25 +25,17 @@ public class ElasticsearchConfig {
     private String username;
     @Value("${spring.elasticsearch.password}")
     private String password;
-    private String indexPrefix;
-    private String syncStrategy;
-    private String searchFailureMode;
 
     @Bean
     public RestClient restClient() {
         String hostUrl = url != null && !url.isBlank() ? url : "http://localhost:9200";
-        System.out.println(hostUrl);
-        BasicCredentialsProvider provider = new BasicCredentialsProvider();
-        provider.setCredentials(
-                AuthScope.ANY,
-                new UsernamePasswordCredentials(username, password)
-        );
+        CredentialsProvider provider = new BasicCredentialsProvider();
+        provider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
 
-        RestClient restClient = RestClient.builder(
-                HttpHost.create(url)
-        ).setHttpClientConfigCallback(httpClientBuilder ->
-                httpClientBuilder.setDefaultCredentialsProvider(provider)
-        ).build();
+        RestClient restClient = RestClient.builder(HttpHost.create(hostUrl))
+                .setHttpClientConfigCallback(httpClientBuilder ->
+                        httpClientBuilder.setDefaultCredentialsProvider(provider))
+                .build();
 
         return restClient;
     }

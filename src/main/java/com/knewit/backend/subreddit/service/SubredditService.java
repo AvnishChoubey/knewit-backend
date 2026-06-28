@@ -1089,7 +1089,7 @@ public class SubredditService {
     private SubredditDocument subredditToSubredditDocument(Subreddit subreddit) {
         return SubredditDocument.builder()
                 .id(subreddit.getId().toString())
-                .name(subreddit.getName())
+                .name(subreddit.getTitle())
                 .title(subreddit.getTitle())
                 .topic(subreddit.getTopic().toString())
                 .visibility(subreddit.getVisibility().toString().toUpperCase())

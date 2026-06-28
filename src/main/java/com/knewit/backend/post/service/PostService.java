@@ -545,6 +545,7 @@ public class PostService {
         return PostDocument.builder()
                 .id(post.getId().toString())
                 .title(post.getTitle())
+                .name(post.getTitle())
                 .body(post.getBody())
                 .subreddit(post.getSubreddit().getName())
                 .authorUsername(post.getAuthor().getUsername())
