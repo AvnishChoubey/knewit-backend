@@ -6,6 +6,7 @@ import com.knewit.backend.search.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,9 +29,10 @@ public class ElasticsearchSyncJob {
     public void processOutbox() {
         try {
             List<SearchIndexSyncEvent> events =
-                    outboxRepository.findTop100ByStatusAndNextAttemptAtLessThanEqual(
+                    outboxRepository.findTop100ByStatusAndNextAttemptAtLessThanEqualOrNull(
                             "PENDING",
-                            LocalDateTime.now()
+                            LocalDateTime.now(),
+                            PageRequest.of(0, 100)
                     );
 
             if (events.isEmpty()) {

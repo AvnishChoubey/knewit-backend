@@ -32,16 +32,16 @@ public class ElasticsearchConfig {
 
     @Bean
     public RestClient restClient() {
-        String hostUrl = url != null && !url.isBlank() ? url : "http://localhost:9200";
-        System.out.println(hostUrl);
+        String hostUrl = url != null && !url.isBlank() && !url.startsWith("${") ? url : "http://localhost:9200";
+        System.out.println("Elasticsearch connecting to: " + hostUrl);
         BasicCredentialsProvider provider = new BasicCredentialsProvider();
         provider.setCredentials(
                 AuthScope.ANY,
-                new UsernamePasswordCredentials("elastic", password)
+                new UsernamePasswordCredentials("elastic", password != null && !password.startsWith("${") ? password : "")
         );
 
         RestClient restClient = RestClient.builder(
-                HttpHost.create(url)
+                HttpHost.create(hostUrl)
         ).setHttpClientConfigCallback(httpClientBuilder ->
                 httpClientBuilder.setDefaultCredentialsProvider(provider)
         ).build();

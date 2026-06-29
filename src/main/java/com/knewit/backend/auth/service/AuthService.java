@@ -162,11 +162,15 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
-        if(user.getUsername() == null) {
-            throw new KnewitException("EMPTY_USERNAME", "Username cannot be empty", HttpStatus.CONFLICT);
+        if (user.getProfileCompletedAt() != null) {
+            throw new KnewitException("PROFILE_ALREADY_COMPLETED", "Profile is already completed", HttpStatus.CONFLICT);
         }
 
-        if(userRepository.existsByUsername(request.getUsername())) {
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            throw new KnewitException("EMPTY_USERNAME", "Username cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!request.getUsername().equals(user.getUsername()) && userRepository.existsByUsername(request.getUsername())) {
             throw new KnewitException("USERNAME_ALREADY_TAKEN", "Username is already taken", HttpStatus.CONFLICT);
         }
 
@@ -188,7 +192,7 @@ public class AuthService {
                 .id(user.getId().toString())
                 .username(user.getUsername())
                 .build();
-        searchService.enqueueSyncEvent("USER", user.getId(), "UPDATE", userDoc);
+        searchService.enqueueSyncEvent("USER", user.getId().toString(), "UPDATE", userDoc);
 
         for(String interest : request.getInterests()) {
             UserInterest userInterest = UserInterest.builder()

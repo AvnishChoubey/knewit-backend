@@ -115,7 +115,7 @@ public class SubredditService {
         memberRepository.save(creatorMember);
 
         SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
-        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "CREATE", subredditDocument);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId().toString(), "CREATE", subredditDocument);
 
         return subredditToSubredditDto(subreddit);
     }
@@ -442,13 +442,6 @@ public class SubredditService {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
-        Long moderatorId = customUserDetails.getUserId();
-
-        validateModerator(
-                subredditId,
-                moderatorId
-        );
-
         return memberRepository
                 .findBySubreddit_Id(
                         subredditId
@@ -758,7 +751,7 @@ public class SubredditService {
         subredditRepository.save(subreddit);
 
         SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
-        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "UPDATE", subredditDocument);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId().toString(), "UPDATE", subredditDocument);
 
         return subredditToSubredditDto(subreddit);
     }
@@ -917,6 +910,8 @@ public class SubredditService {
                 .postingPolicy(subreddit.getPostingPolicy().name())
                 .iconUrl(subreddit.getIconUrl())
                 .iconPublicId(subreddit.getIconPublicId())
+                .bannerUrl(subreddit.getBannerUrl())
+                .bannerPublicId(subreddit.getBannerPublicId())
                 .creatorUsername(subreddit.getCreator().getUsername())
                 .memberCount(subreddit.getMemberCount())
                 .postCount(subreddit.getPostCount())

@@ -51,6 +51,12 @@ public class User {
     @Column(name = "avatar_public_id")
     private String avatarPublicId;
 
+    @Column(name = "banner_url", columnDefinition = "TEXT")
+    private String bannerUrl;
+
+    @Column(name = "banner_public_id")
+    private String bannerPublicId;
+
 //    @Column(name = "avatar_version", nullable = false)
 //    @Builder.Default
 //    private Long avatarVersion = 0L;

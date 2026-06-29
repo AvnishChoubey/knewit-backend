@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**").permitAll()
                         // USERS
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/me").hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/user").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user", "/api/v1/user/").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/*/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/*/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/user/**").hasRole("USER")
@@ -86,6 +86,8 @@ public class SecurityConfig {
                             """);
                         })
                 )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();

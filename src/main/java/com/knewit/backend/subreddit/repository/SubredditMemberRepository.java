@@ -57,4 +57,9 @@ public interface SubredditMemberRepository
             Long subredditId,
             MemberStatus memberStatus
     );
+
+    List<SubredditMember> findByUser_IdAndMemberStatus(
+            Long userId,
+            MemberStatus memberStatus
+    );
 }

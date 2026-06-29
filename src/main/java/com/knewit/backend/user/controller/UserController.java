@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 public class UserController {
 
     @Autowired private UserService userService;
+    @Autowired private com.knewit.backend.comment.service.CommentService commentService;
 
     /* PROFILE APIS */
 
@@ -28,11 +30,21 @@ public class UserController {
         return ResponseEntity.ok(userService.getMe(customUserDetails));
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<GetPublicUserResponse> getPublicUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
                                                                @RequestParam("username") String username) {
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L; // Dummy viewer if anonymous
         return ResponseEntity.ok(userService.getPublicUser(viewerId, username));
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserProfileDto> updateMyProfile(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                          @PathVariable("userId") Long userId,
+                                                          @RequestBody UpdateMyProfileRequest request) {
+        if (customUserDetails == null || !customUserDetails.getUserId().equals(userId)) {
+            throw new com.knewit.backend.common.exception.KnewitException("UNAUTHORIZED_USER", "Unauthorized user", org.springframework.http.HttpStatus.UNAUTHORIZED);
+        }
+        return ResponseEntity.ok(userService.updateMyProfile(userId, request));
     }
 
     /* SUBREDDIT APIS */
@@ -53,6 +65,30 @@ public class UserController {
                                                       @RequestParam(defaultValue = "0") int page,
                                                       @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(userService.getUserPosts(userId, customUserDetails, page, size));
+    }
+
+    @GetMapping("/{userId}/comments")
+    public ResponseEntity<java.util.List<com.knewit.backend.comment.dto.CommentDto>> getUserComments(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        return ResponseEntity.ok(commentService.getUserComments(userId, customUserDetails));
+    }
+
+    @GetMapping("/{userId}/upvoted")
+    public ResponseEntity<java.util.List<PostDto>> getUserUpvotedPosts(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        return ResponseEntity.ok(userService.getUserVotedPosts(userId, customUserDetails, com.knewit.backend.common.enums.VoteType.UPVOTE));
+    }
+
+    @GetMapping("/{userId}/downvoted")
+    public ResponseEntity<java.util.List<PostDto>> getUserDownvotedPosts(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        return ResponseEntity.ok(userService.getUserVotedPosts(userId, customUserDetails, com.knewit.backend.common.enums.VoteType.DOWNVOTE));
     }
 
     /*  SAVE APIS  */
@@ -127,6 +163,32 @@ public class UserController {
                                         @RequestParam("entity") String entity,
                                         @RequestParam("entityId") Long entityId) {
         userService.unblock(customUserDetails, userId, entity, entityId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{userId}/avatar")
+    public ResponseEntity<Void> uploadAvatar(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestPart(name = "avatar") MultipartFile file
+    ) {
+        if (customUserDetails == null || !customUserDetails.getUserId().equals(userId)) {
+            throw new com.knewit.backend.common.exception.KnewitException("UNAUTHORIZED_USER", "Unauthorized user", org.springframework.http.HttpStatus.UNAUTHORIZED);
+        }
+        userService.uploadAvatar(userId, file);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{userId}/banner")
+    public ResponseEntity<Void> uploadBanner(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestPart(name = "banner") MultipartFile file
+    ) {
+        if (customUserDetails == null || !customUserDetails.getUserId().equals(userId)) {
+            throw new com.knewit.backend.common.exception.KnewitException("UNAUTHORIZED_USER", "Unauthorized user", org.springframework.http.HttpStatus.UNAUTHORIZED);
+        }
+        userService.uploadBanner(userId, file);
         return ResponseEntity.ok().build();
     }
 }

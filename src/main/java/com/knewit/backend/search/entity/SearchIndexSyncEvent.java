@@ -1,12 +1,9 @@
 package com.knewit.backend.search.entity;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -27,7 +24,7 @@ public class SearchIndexSyncEvent {
     private String entityType;
 
     @Column(name = "entity_id", nullable = false)
-    private Long entityId;
+    private String entityId;
 
     @Column(nullable = false, length = 50)
     private String operation; // CREATE, UPDATE, DELETE
@@ -44,7 +41,8 @@ public class SearchIndexSyncEvent {
     private Integer attemptCount = 0;
 
     @Column(name = "next_attempt_at")
-    private LocalDateTime nextAttemptAt;
+    @Builder.Default
+    private LocalDateTime nextAttemptAt = LocalDateTime.now();
 
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
