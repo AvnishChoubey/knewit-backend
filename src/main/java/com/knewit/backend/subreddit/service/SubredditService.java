@@ -115,7 +115,7 @@ public class SubredditService {
         memberRepository.save(creatorMember);
 
         SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
-        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId().toString(), "CREATE", subredditDocument);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "CREATE", subredditDocument);
 
         return subredditToSubredditDto(subreddit);
     }
@@ -751,7 +751,7 @@ public class SubredditService {
         subredditRepository.save(subreddit);
 
         SubredditDocument subredditDocument = subredditToSubredditDocument(subreddit);
-        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId().toString(), "UPDATE", subredditDocument);
+        searchService.enqueueSyncEvent("SUBREDDIT", subreddit.getId(), "UPDATE", subredditDocument);
 
         return subredditToSubredditDto(subreddit);
     }
@@ -1084,8 +1084,10 @@ public class SubredditService {
     private SubredditDocument subredditToSubredditDocument(Subreddit subreddit) {
         return SubredditDocument.builder()
                 .id(subreddit.getId().toString())
-                .name(subreddit.getName())
+                .name(subreddit.getTitle())
                 .title(subreddit.getTitle())
+                .topic(subreddit.getTopic().toString())
+                .visibility(subreddit.getVisibility().toString().toUpperCase())
                 .build();
     }
 }

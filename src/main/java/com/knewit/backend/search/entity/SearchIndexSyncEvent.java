@@ -18,13 +18,14 @@ import java.util.UUID;
 public class SearchIndexSyncEvent {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "entity_type", nullable = false, length = 50)
     private String entityType;
 
     @Column(name = "entity_id", nullable = false)
-    private String entityId;
+    private Long entityId;
 
     @Column(nullable = false, length = 50)
     private String operation; // CREATE, UPDATE, DELETE

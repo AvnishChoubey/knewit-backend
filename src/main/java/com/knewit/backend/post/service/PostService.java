@@ -198,7 +198,7 @@ public class PostService {
         }
 
         PostDocument postDocument = postToPostDocument(post);
-        searchService.enqueueSyncEvent("POST", post.getId().toString(), "CREATE", postDocument);
+        searchService.enqueueSyncEvent("POST", post.getId(), "CREATE", postDocument);
 
         return postToPostDto(
                 post,
@@ -237,7 +237,7 @@ public class PostService {
         post = postRepository.save(post);
 
         PostDocument postDocument = postToPostDocument(post);
-        searchService.enqueueSyncEvent("POST", post.getId().toString(), "UPDATE", postDocument);
+        searchService.enqueueSyncEvent("POST", post.getId(), "UPDATE", postDocument);
 
         return postToPostDto(post, authorId);
     }
@@ -291,7 +291,7 @@ public class PostService {
         post.setPostStatus(PostStatus.ARCHIVED);
 
         PostDocument postDocument = postToPostDocument(post);
-        searchService.enqueueSyncEvent("POST", post.getId().toString(), "DELETE", postDocument);
+        searchService.enqueueSyncEvent("POST", post.getId(), "DELETE", postDocument);
 
         postRepository.save(post);
     }
@@ -586,11 +586,11 @@ public class PostService {
         return PostDocument.builder()
                 .id(post.getId().toString())
                 .title(post.getTitle())
+                .name(post.getTitle())
                 .body(post.getBody())
                 .subreddit(post.getSubreddit().getName())
                 .authorUsername(post.getAuthor().getUsername())
-                .postStatus(post.getPostStatus().name())
-                .visibility(post.getSubreddit().getVisibility().name())
+                .postStatus(post.getPostStatus().toString().toUpperCase())
                 .build();
     }
 }

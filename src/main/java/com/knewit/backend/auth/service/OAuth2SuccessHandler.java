@@ -24,7 +24,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     @Autowired private JwtService jwtService;
     @Autowired private UserRepository userRepository;
-//    @Autowired private UserService userService;
 
     @Override
     public void onAuthenticationSuccess(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, Authentication authentication) throws IOException {

@@ -192,7 +192,7 @@ public class AuthService {
                 .id(user.getId().toString())
                 .username(user.getUsername())
                 .build();
-        searchService.enqueueSyncEvent("USER", user.getId().toString(), "UPDATE", userDoc);
+        searchService.enqueueSyncEvent("USER", user.getId(), "UPDATE", userDoc);
 
         for(String interest : request.getInterests()) {
             UserInterest userInterest = UserInterest.builder()

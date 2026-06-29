@@ -30,7 +30,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getMe(customUserDetails));
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<GetPublicUserResponse> getPublicUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
                                                                @RequestParam("username") String username) {
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L; // Dummy viewer if anonymous

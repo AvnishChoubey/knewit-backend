@@ -31,7 +31,7 @@ public class Comment {
     @JoinColumn(name = "author_user_id", nullable = false)
     private User author;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "parent_comment_id")
     private Comment parentComment;
 

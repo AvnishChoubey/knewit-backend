@@ -253,7 +253,7 @@ public class CommentService {
 
         CommentDocument commentDocument = commentToCommentDocument(comment);
 
-        searchService.enqueueSyncEvent("COMMENT", comment.getId().toString(), "UPDATE", commentDocument);
+        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "UPDATE", commentDocument);
 
         return commentToCommentDto(comment, userId);
     }
@@ -272,7 +272,7 @@ public class CommentService {
                     .contentStatus(child.getCommentStatus().toString())
                     .build();
 
-            searchService.enqueueSyncEvent("COMMENT", child.getId().toString(), "DELETE", commentDocument);
+            searchService.enqueueSyncEvent("COMMENT", child.getId(), "DELETE", commentDocument);
             softDeleteChildren(child.getId());
         }
     }
@@ -297,7 +297,7 @@ public class CommentService {
 
         CommentDocument commentDocument = commentToCommentDocument(comment);
 
-        searchService.enqueueSyncEvent("COMMENT", comment.getId().toString(), "DELETE", commentDocument);
+        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "DELETE", commentDocument);
 
         softDeleteChildren(comment.getId());
     }
@@ -376,7 +376,7 @@ public class CommentService {
 
         CommentDocument commentDocument = commentToCommentDocument(comment);
 
-        searchService.enqueueSyncEvent("COMMENT", comment.getId().toString(), "CREATE", commentDocument);
+        searchService.enqueueSyncEvent("COMMENT", comment.getId(), "CREATE", commentDocument);
 
         CommentVote selfVote = CommentVote.builder()
                 .comment(comment)

@@ -12,21 +12,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/search")
 public class SearchController {
 
     @Autowired private SearchService searchService;
 
-    @GetMapping("/search")
-    public ResponseEntity<SearchResponseDto> search(@RequestParam(value = "q", required = false) String q,
-                                                    @RequestParam(value = "query", required = false) String queryParam) {
-        
-        String term = q != null ? q : queryParam;
-        if (term == null || term.isBlank()) {
+    @GetMapping
+    public ResponseEntity<SearchResponseDto> search(@RequestParam(value = "q", required = false) String q) {
+
+        if (q == null || q.isBlank()) {
             throw new KnewitException("EMPTY_QUERY", "Query string is empty", HttpStatus.BAD_REQUEST);
         }
         
-        SearchResponseDto response = searchService.search(term.trim());
+        SearchResponseDto response = searchService.search(q.trim());
         return ResponseEntity.ok(response);
     }
 }
