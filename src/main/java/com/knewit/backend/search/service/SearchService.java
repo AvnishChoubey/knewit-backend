@@ -214,7 +214,7 @@ public class SearchService {
                                             .must(m -> m
                                                 .multiMatch(mm -> mm
                                                     .query(query)
-                                                    .fields("name^3", "body^2")
+                                                    .fields("body^3")
                                                     .type(TextQueryType.BestFields)
                                                     .operator(Operator.Or)
                                                 )

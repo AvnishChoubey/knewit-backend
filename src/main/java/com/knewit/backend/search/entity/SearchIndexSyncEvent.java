@@ -42,7 +42,8 @@ public class SearchIndexSyncEvent {
     private Integer attemptCount = 0;
 
     @Column(name = "next_attempt_at")
-    private LocalDateTime nextAttemptAt;
+    @Builder.Default
+    private LocalDateTime nextAttemptAt = LocalDateTime.now();
 
     @Column(name = "processed_at")
     private LocalDateTime processedAt;

@@ -12,7 +12,9 @@ import com.knewit.backend.comment.repository.CommentBlockRepository;
 import com.knewit.backend.comment.repository.CommentFollowRepository;
 import com.knewit.backend.comment.repository.CommentRepository;
 import com.knewit.backend.comment.repository.CommentSaveRepository;
+import com.knewit.backend.comment.enums.CommentStatus;
 import com.knewit.backend.common.enums.Topic;
+import com.knewit.backend.common.enums.VoteType;
 import com.knewit.backend.common.exception.KnewitException;
 import com.knewit.backend.post.dto.PostDto;
 import com.knewit.backend.post.entity.Post;
@@ -20,10 +22,13 @@ import com.knewit.backend.post.entity.PostBlock;
 import com.knewit.backend.post.entity.PostFollow;
 import com.knewit.backend.post.entity.PostSave;
 import com.knewit.backend.post.enums.PostStatus;
+import com.knewit.backend.post.entity.PostMedia;
 import com.knewit.backend.post.repository.PostBlockRepository;
 import com.knewit.backend.post.repository.PostFollowRepository;
+import com.knewit.backend.post.repository.PostMediaRepository;
 import com.knewit.backend.post.repository.PostRepository;
 import com.knewit.backend.post.repository.PostSaveRepository;
+import com.knewit.backend.post.repository.PostVoteRepository;
 import com.knewit.backend.search.entity.UserDocument;
 import com.knewit.backend.subreddit.entity.Subreddit;
 import com.knewit.backend.subreddit.entity.SubredditMember;
@@ -64,27 +69,30 @@ public class UserService {
     @Autowired private UserBlockRepository userBlockRepository;
     @Autowired private PostBlockRepository postBlockRepository;
     @Autowired private CommentBlockRepository commentBlockRepository;
+    @Autowired private PostMediaRepository postMediaRepository;
+    @Autowired private PostVoteRepository postVoteRepository;
+    @Autowired private com.knewit.backend.common.service.MediaService mediaService;
 
     @Transactional
     public UserProfileDto updateMyProfile(Long userId, UpdateMyProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
-        
+
         if(request.getBio() != null) user.setBio(request.getBio());
         if(request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
         if(request.getAvatarPublicId() != null) user.setAvatarPublicId(request.getAvatarPublicId());
-        
+
         userRepository.save(user);
 
         if(request.getInterests() != null) {
             userInterestRepository.deleteAllByUser_Id(userId);
-            
+
             for(Topic interest : request.getInterests()) {
                 UserInterest userInterest = UserInterest.builder()
                         .user(user)
                         .interest(interest)
                         .build();
-                
+
                 userInterestRepository.save(userInterest);
             }
         }
@@ -93,8 +101,34 @@ public class UserService {
     }
 
     @Transactional
+    public void uploadAvatar(Long userId, org.springframework.web.multipart.MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
+
+        com.knewit.backend.common.dto.MediaUploadResponse response =
+                mediaService.uploadFile(file, "knewit/users/avatars");
+
+        user.setAvatarUrl(response.getUrl());
+        user.setAvatarPublicId(response.getPublicId());
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void uploadBanner(Long userId, org.springframework.web.multipart.MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
+
+        com.knewit.backend.common.dto.MediaUploadResponse response =
+                mediaService.uploadFile(file, "knewit/users/banners");
+
+        user.setBannerUrl(response.getUrl());
+        user.setBannerPublicId(response.getPublicId());
+        userRepository.save(user);
+    }
+
+    @Transactional
     public AuthenticatedUserDto getMe(CustomUserDetails customUserDetails) {
-        if(customUserDetails.getUserId() != customUserDetails.getUserId()) {
+        if(customUserDetails == null) {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
@@ -116,14 +150,14 @@ public class UserService {
                 .orElseThrow(() -> new KnewitException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
 
         boolean isFollowing = userFollowRepository.existsByFollower_IdAndFollowed_Id(viewerId, targetUser.getId());
-        boolean isBlocked = userBlockRepository.existsByBlocker_IdAndBlocked_Id(targetUser.getId(), viewerId);
-        boolean isBlockedByViewer = userBlockRepository.existsByBlocker_IdAndBlocked_Id(viewerId, targetUser.getId());
+        boolean isBlocked = viewerId != 0L && !targetUser.getId().equals(viewerId) && userBlockRepository.existsByBlocker_IdAndBlocked_Id(targetUser.getId(), viewerId);
+        boolean isBlockedByViewer = viewerId != 0L && !targetUser.getId().equals(viewerId) && userBlockRepository.existsByBlocker_IdAndBlocked_Id(viewerId, targetUser.getId());
 
         UserProfileDto profileDto = getUserProfileDto(targetUser);
 
         return new GetPublicUserResponse(profileDto, isFollowing, isBlocked, isBlockedByViewer);
     }
-    
+
     /* SAVE FEATURE METHODS */
 
     public Map<?, ?> getAllSaves(CustomUserDetails customUserDetails, Long saverId) {
@@ -133,13 +167,20 @@ public class UserService {
         if(saver.getId() != customUserDetails.getUserId()) {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
-        
+
         List<PostSave> postsaves = postSaveRepository.findAllBySaver(saver);
         List<CommentSave> commentsaves = commentSaveRepository.findAllBySaver(saver);
 
-        Map<String, List<?>> response = new HashMap<>();
+        List<PostDto> savedPosts = postsaves.stream()
+                .map(ps -> {
+                    PostDto dto = postToPostDto(ps.getSaved(), saverId);
+                    dto.setSaved(true);
+                    return dto;
+                })
+                .collect(Collectors.toList());
 
-        response.put("savedPosts", postsaves);
+        Map<String, Object> response = new HashMap<>();
+        response.put("posts", savedPosts);
         response.put("savedComments", commentsaves);
 
         return response;
@@ -420,10 +461,14 @@ public class UserService {
         List<PostBlock> postBlocks = postBlockRepository.findAllByBlocker(blocker);
         List<CommentBlock> commentBlocks = commentBlockRepository.findAllByBlocker(blocker);
 
+        List<PostDto> postDtos = postBlocks.stream()
+                .map(pb -> postToPostDto(pb.getBlocked(), blocker.getId()))
+                .collect(Collectors.toList());
+
         Map<String, List<?>> response = new HashMap<>();
 
         response.put("blockedUsers", userBlocks);
-        response.put("blockedPosts", postBlocks);
+        response.put("blockedPosts", postDtos);
         response.put("blockedComments", commentBlocks);
 
         return response;
@@ -558,15 +603,28 @@ public class UserService {
     public Page<PostDto> getUserPosts(Long authorId, CustomUserDetails customUserDetails, int page, int size) {
         Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
 
-        Optional<UserBlock> optionalUserblock = userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, viewerId);
-        if (optionalUserblock.isPresent()){
+        if (viewerId != 0L && !authorId.equals(viewerId) && userBlockRepository.findByBlocker_IdAndBlocked_Id(authorId, viewerId).isPresent()) {
             throw new KnewitException("ALREADY_BLOCKED", "You are blocked", HttpStatus.BAD_REQUEST);
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return postRepository.findByAuthor_IdAndPostStatus(authorId, PostStatus.PUBLISHED, pageable)
-                .map(post -> postToPostDto(post));
+                .map(post -> postToPostDto(post, viewerId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostDto> getUserVotedPosts(Long userId, CustomUserDetails customUserDetails, VoteType voteType) {
+        Long viewerId = (customUserDetails != null) ? customUserDetails.getUserId() : 0L;
+        if (viewerId != 0L && !userId.equals(viewerId) && userBlockRepository.findByBlocker_IdAndBlocked_Id(userId, viewerId).isPresent()) {
+            throw new KnewitException("ALREADY_BLOCKED", "You are blocked", HttpStatus.BAD_REQUEST);
+        }
+
+        return postVoteRepository.findByUser_IdAndVoteType(userId, voteType).stream()
+                .map(com.knewit.backend.post.entity.PostVote::getPost)
+                .filter(post -> post.getPostStatus() == PostStatus.PUBLISHED)
+                .map(post -> postToPostDto(post, viewerId))
+                .collect(Collectors.toList());
     }
 
     private UserProfileDto getUserProfileDto(User user) {
@@ -577,29 +635,76 @@ public class UserService {
         long followers = userFollowRepository.countByFollowed_Id(user.getId());
         long following = userFollowRepository.countByFollower_Id(user.getId());
 
+        long karma = postRepository.sumPostScoreByAuthorId(user.getId()) + commentRepository.sumCommentScoreByAuthorId(user.getId());
+
+        long postsCount = postRepository.countByAuthor_IdAndPostStatus(user.getId(), PostStatus.PUBLISHED);
+        long commentsCount = commentRepository.countByAuthor_IdAndCommentStatus(user.getId(), CommentStatus.PUBLISHED);
+        long contributions = postsCount + commentsCount;
+
         return UserProfileDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .bio(user.getBio())
                 .avatarUrl(user.getAvatarUrl())
                 .avatarPublicId(user.getAvatarPublicId())
+                .bannerUrl(user.getBannerUrl())
+                .bannerPublicId(user.getBannerPublicId())
                 .interests(interests)
                 .followersCount(followers)
                 .followingCount(following)
+                .karma(karma)
+                .contributions(contributions)
+                .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
                 .build();
     }
 
-    public PostDto postToPostDto(Post post) {
+    public PostDto postToPostDto(Post post, Long viewerId) {
+        PostMedia media = postMediaRepository.findAllByPost_Id(post.getId())
+                .stream()
+                .findFirst()
+                .orElse(null);
+
+        boolean followed = false;
+        if (viewerId != null && viewerId != 0L) {
+            followed = postFollowRepository.existsByFollower_IdAndFollowed_Id(viewerId, post.getId());
+        }
+
+        boolean saved = false;
+        if (viewerId != null && viewerId != 0L) {
+            saved = postSaveRepository.existsBySaver_IdAndSaved_Id(viewerId, post.getId());
+        }
+
+        String votedState = "NONE";
+        if (viewerId != null && viewerId != 0L) {
+            com.knewit.backend.post.entity.PostVote vote = postVoteRepository.findByPost_IdAndUser_Id(post.getId(), viewerId).orElse(null);
+            if (vote != null) {
+                votedState = vote.getVoteType().name();
+            }
+        }
+
         return PostDto.builder()
                 .id(post.getId())
+                .subredditName(post.getSubreddit() != null ? post.getSubreddit().getName() : null)
+                .authorUsername(post.getAuthor() != null ? post.getAuthor().getUsername() : null)
+                .title(post.getTitle())
+                .type(post.getType() != null ? post.getType().name() : null)
                 .body(post.getBody())
                 .externalUrl(post.getExternalUrl())
-                .postStatus(PostStatus.PUBLISHED.toString())
-                .authorUsername(post.getAuthor().getUsername())
-                .createdAt(post.getCreatedAt().toString())
-                .downvoteCount(post.getDownvoteCount())
+                .mediaUrl(media != null ? media.getCloudinaryUrl() : null)
+                .mediaPublicId(media != null ? media.getCloudinaryPublicId() : null)
+                .postStatus(post.getPostStatus() != null ? post.getPostStatus().name() : null)
                 .upvoteCount(post.getUpvoteCount())
+                .downvoteCount(post.getDownvoteCount())
+                .shareCount(post.getShareCount())
                 .commentCount(post.getCommentCount())
+                .scoreHot(post.getScoreHot())
+                .scoreBest(post.getScoreBest())
+                .scoreRising(post.getScoreRising())
+                .scoreTop(post.getScoreTop())
+                .createdAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : null)
+                .votedState(votedState)
+                .saved(saved)
+                .followed(followed)
                 .build();
     }
 }

@@ -26,6 +26,8 @@ import com.knewit.backend.subreddit.repository.SubredditMemberRepository;
 import com.knewit.backend.subreddit.repository.SubredditRepository;
 import com.knewit.backend.user.repository.UserBlockRepository;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -95,7 +97,8 @@ public class PostService {
             }
         }
 
-        if ((postType == PostType.MEDIA)
+        if ((postType == PostType.IMAGE
+                || postType == PostType.VIDEO)
                 && request.getMedia() == null) {
 
             throw new RuntimeException(
@@ -155,7 +158,8 @@ public class PostService {
 
         postVoteRepository.save(selfVote);
 
-        if (postType == PostType.MEDIA) {
+        if (postType == PostType.IMAGE
+                || postType == PostType.VIDEO) {
 
             MediaUploadResponse mediaUploadResponse =
                     mediaService.uploadFile(
@@ -165,10 +169,10 @@ public class PostService {
 
             PostMedia media = PostMedia.builder()
                     .post(post)
-                    .mediaType(MediaType.MEDIA
-//                            postType == PostType.VIDEO
-//                                    ? MediaType.VIDEO
-//                                    : MediaType.IMAGE
+                    .mediaType(
+                            postType == PostType.VIDEO
+                                    ? MediaType.VIDEO
+                                    : MediaType.IMAGE
                     )
                     .cloudinaryUrl(
                             mediaUploadResponse.getUrl()
@@ -246,7 +250,7 @@ public class PostService {
         Post post = postRepository.findByIdAndPostStatus(postId, PostStatus.PUBLISHED)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        if (viewerId != 0L) {
+        if (viewerId != 0L && !viewerId.equals(post.getAuthor().getId())) {
             if (userBlockRepository.findByBlocker_IdAndBlocked_Id(viewerId, post.getAuthor().getId()).isPresent()) {
                 throw new KnewitException("USER_BLOCKED", "Post owner has been blocked by you.", HttpStatus.BAD_REQUEST);
             }
@@ -269,9 +273,20 @@ public class PostService {
             throw new KnewitException("UNAUTHORIZED_USER", "Unauthorized user", HttpStatus.UNAUTHORIZED);
         }
 
-        Long authorId = customUserDetails.getUserId();
-        Post post = postRepository.findByIdAndAuthor_Id(postId, authorId)
-                .orElseThrow(() -> new RuntimeException("Post not found or unauthorized"));
+        Long userId = customUserDetails.getUserId();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        boolean isAuthor = post.getAuthor().getId().equals(userId);
+        boolean isModerator = false;
+        if (post.getSubreddit() != null) {
+            isModerator = subredditMemberRepository
+                    .existsBySubreddit_IdAndUser_IdAndIsModeratorTrue(post.getSubreddit().getId(), userId);
+        }
+
+        if (!isAuthor && !isModerator) {
+            throw new KnewitException("UNAUTHORIZED_USER", "You are not authorized to delete this post", HttpStatus.UNAUTHORIZED);
+        }
 
         post.setPostStatus(PostStatus.ARCHIVED);
 
@@ -394,7 +409,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostDto> getFeed(Long viewerId, int page, int size, String sort) {
+    public Page<PostDto> getFeed(Long viewerId, int page, int size, String sort, String feedType, Long cursor) {
 
         FeedSort feedSort =
                 FeedSort.valueOf(
@@ -402,68 +417,92 @@ public class PostService {
                 );
 
         Pageable pageable;
+        int queryPage = (cursor != null && cursor > 0) ? 0 : page;
 
         switch (feedSort) {
 
             case TOP -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "scoreTop"
+                                     Sort.Direction.DESC,
+                                     "scoreTop"
                             )
                     );
 
             case HOT -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "scoreHot"
+                                     Sort.Direction.DESC,
+                                     "scoreHot"
                             )
                     );
 
             case RISING -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "scoreRising"
+                                     Sort.Direction.DESC,
+                                     "scoreRising"
                             )
                     );
 
             default -> pageable =
                     PageRequest.of(
-                            page,
+                            queryPage,
                             size,
                             Sort.by(
-                                    Sort.Direction.DESC,
-                                    "createdAt"
+                                     Sort.Direction.DESC,
+                                     "createdAt"
                             )
                     );
         }
 
-        return postRepository
-                .findByPostStatus(
-                        PostStatus.PUBLISHED,
-                        pageable
-                )
-                .map(post ->
-                        postToPostDto(
-                                post,
-                                viewerId
-                        ));
+        Page<Post> posts;
+        if ("HOME".equalsIgnoreCase(feedType) && viewerId != null && viewerId != 0L) {
+            List<Long> joinedSubredditIds = subredditMemberRepository
+                    .findByUser_IdAndMemberStatus(viewerId, MemberStatus.APPROVED)
+                    .stream()
+                    .map(m -> m.getSubreddit().getId())
+                    .collect(Collectors.toList());
+
+            if (!joinedSubredditIds.isEmpty()) {
+                if (cursor != null && cursor > 0) {
+                    posts = postRepository.findBySubreddit_IdInAndPostStatusAndIdLessThan(joinedSubredditIds, PostStatus.PUBLISHED, cursor, pageable);
+                } else {
+                    posts = postRepository.findBySubreddit_IdInAndPostStatus(joinedSubredditIds, PostStatus.PUBLISHED, pageable);
+                }
+            } else {
+                if (cursor != null && cursor > 0) {
+                    posts = postRepository.findByPostStatusAndIdLessThan(PostStatus.PUBLISHED, cursor, pageable);
+                } else {
+                    posts = postRepository.findByPostStatus(PostStatus.PUBLISHED, pageable);
+                }
+            }
+        } else {
+            if (cursor != null && cursor > 0) {
+                posts = postRepository.findByPostStatusAndIdLessThan(PostStatus.PUBLISHED, cursor, pageable);
+            } else {
+                posts = postRepository.findByPostStatus(PostStatus.PUBLISHED, pageable);
+            }
+        }
+
+        return posts.map(post ->
+                postToPostDto(
+                        post,
+                        viewerId
+                ));
     }
 
     private PostDto postToPostDto(Post post, Long viewerId) {
 
         boolean followed = false;
 
-        if (viewerId != null) {
-
+        if (viewerId != null && viewerId != 0L) {
             followed =
                     postFollowRepository
                             .existsByFollower_IdAndFollowed_Id(viewerId, post.getId());
@@ -471,22 +510,24 @@ public class PostService {
 
         boolean saved = false;
 
-        if (viewerId != null) {
+        if (viewerId != null && viewerId != 0L) {
             saved = postSaveRepository
                     .existsBySaver_IdAndSaved_Id(viewerId, post.getId());
         }
 
         String votedState = "NONE";
 
-        PostVote vote = postVoteRepository
-                .findByPost_IdAndUser_Id(
-                        post.getId(),
-                        viewerId
-                )
-                .orElse(null);
+        if (viewerId != null && viewerId != 0L) {
+            PostVote vote = postVoteRepository
+                    .findByPost_IdAndUser_Id(
+                            post.getId(),
+                            viewerId
+                    )
+                    .orElse(null);
 
-        if (vote != null) {
-            votedState = vote.getVoteType().name();
+            if (vote != null) {
+                votedState = vote.getVoteType().name();
+            }
         }
 
         PostMedia media = postMediaRepository

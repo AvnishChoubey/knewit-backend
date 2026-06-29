@@ -28,8 +28,23 @@ public class JwtService {
 
     private SecretKey getSignInKey() {
         System.out.println("JWT SERVICE GET SIGNIN KEY METHOD CALLED");
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        System.out.println("KEYBYTES ARRAY = " + keyBytes);
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        } catch (Exception e) {
+            keyBytes = SECRET_KEY.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        if (keyBytes.length < 32) {
+            try {
+                java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+                keyBytes = digest.digest(keyBytes);
+            } catch (java.security.NoSuchAlgorithmException ex) {
+                throw new RuntimeException("SHA-256 algorithm not found", ex);
+            }
+        }
+
+        System.out.println("KEYBYTES ARRAY LENGTH = " + keyBytes.length);
         SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes);
         System.out.println("SECRET KEY GENERATED = " + secretKey);
         return secretKey;

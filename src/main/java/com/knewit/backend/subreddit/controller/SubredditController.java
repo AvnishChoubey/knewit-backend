@@ -164,7 +164,7 @@ public class SubredditController {
     @PatchMapping("/{name}/approve-member")
     public ResponseEntity<Void> approveMembership(
             @PathVariable String name,
-            @PathVariable Long userId,
+            @RequestParam Long userId,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         subredditService.approveMembership(
@@ -179,7 +179,7 @@ public class SubredditController {
     @PatchMapping("/{name}/reject-member")
     public ResponseEntity<Void> rejectMembership(
             @PathVariable String name,
-            @PathVariable Long userId,
+            @RequestParam Long userId,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         subredditService.rejectMembership(
@@ -237,7 +237,7 @@ public class SubredditController {
     @DeleteMapping("/{name}/moderators")
     public ResponseEntity<Void> removeModerator(
             @PathVariable String name,
-            @PathVariable Long userId,
+            @RequestParam Long userId,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         subredditService.removeModerator(

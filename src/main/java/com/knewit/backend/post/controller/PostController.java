@@ -23,7 +23,7 @@ public class PostController {
     @Autowired
     private  PostService postService;
 
-    @PostMapping(name = "/create",
+    @PostMapping(value = "/create",
             consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostDto> createPost(@AuthenticationPrincipal CustomUserDetails customUserDetails, @ModelAttribute CreatePostRequest request) {
 
@@ -83,10 +83,12 @@ public class PostController {
 
     @GetMapping("/feed")
     public ResponseEntity<Page<PostDto>> getFeed(
-            @RequestParam Long viewerId,
+            @RequestParam(required = false) Long viewerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "HOT") String sort
+            @RequestParam(defaultValue = "HOT") String sort,
+            @RequestParam(defaultValue = "HOME") String feedType,
+            @RequestParam(required = false) Long cursor
     ) {
 
         return ResponseEntity.ok(
@@ -94,7 +96,9 @@ public class PostController {
                         viewerId,
                         page,
                         size,
-                        sort
+                        sort,
+                        feedType,
+                        cursor
                 )
         );
     }

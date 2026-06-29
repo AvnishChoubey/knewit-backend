@@ -10,17 +10,17 @@ public class CorsConfig {
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {
-
         return new WebMvcConfigurer() {
-
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-
-                registry.addMapping("/*")
-                        .allowedOriginPatterns("http://localhost/:")
-                        .allowedMethods("")
-                        .allowedHeaders("")
-                        .allowCredentials(true);
+                registry.addMapping("/**") // 1. Fix: Matches ALL application routes and endpoints
+                        .allowedOriginPatterns(
+                                "http://localhost:[*]",      // Matches any port on localhost
+                                "http://127.0.0.1:[*]"       // Matches any port on local loopback
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS") // 2. Fix: Explicitly allowed REST methods
+                        .allowedHeaders("Authorization", "Content-Type", "X-Requested-With") // 3. Fix: Allows headers, including JWT tokens
+                        .allowCredentials(true); // Allows cookies/auth headers to pass securely
             }
         };
     }

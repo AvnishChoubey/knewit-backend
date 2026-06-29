@@ -19,4 +19,8 @@ public interface PostVoteRepository
             VoteType voteType
     );
 
+    java.util.List<PostVote> findByUser_IdAndVoteType(
+            Long userId,
+            VoteType voteType
+    );
 }

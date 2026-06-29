@@ -18,9 +18,13 @@ public class UserProfileDto {
     private String bio;
     private String avatarUrl;
     private String avatarPublicId;
+    private String bannerUrl;
+    private String bannerPublicId;
     private List<Topic> interests;
     private long followersCount;
     private long followingCount;
+    private long karma;
+    private long contributions;
     private String createdAt;
     private String updatedAt;
 }

@@ -47,7 +47,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         if(user.getProfileCompletedAt() == null) {
             response.sendRedirect(frontendUrl + "/complete-profile");
         } else {
-            response.sendRedirect(frontendUrl + "/feed");
+            response.sendRedirect(frontendUrl + "/");
         }
     }
 }

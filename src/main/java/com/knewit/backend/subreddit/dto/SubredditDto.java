@@ -29,6 +29,10 @@ public class SubredditDto {
 
     private String iconPublicId;
 
+    private String bannerUrl;
+
+    private String bannerPublicId;
+
     private String creatorUsername;
 
     private Long memberCount;
